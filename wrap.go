@@ -1,3 +1,5 @@
+// Package wrap provides utility functions to wrap errors with extra context in an easy-to-read
+// format.
 package wrap
 
 import (
