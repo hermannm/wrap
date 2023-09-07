@@ -1,6 +1,6 @@
 # wrap
 
-A small Go package to wrap errors with extra context in an easy-to-read format.
+A small Go package for wrapping errors with extra context in an easy-to-read format.
 
 Run `go get hermannm.dev/wrap` to add it to your project!
 
