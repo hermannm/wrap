@@ -16,8 +16,6 @@ failed to register user: user creation failed: invalid user data: invalid userna
 This package's `wrap.Error` aims to alleviate this, by instead displaying wrapped errors like this:
 ```
 failed to register user
-
-Caused by:
 - user creation failed
 - invalid user data
 - invalid username
@@ -36,20 +34,16 @@ err := errors.New("expired token")
 wrapped := wrap.Error(err, "user authentication failed")
 fmt.Println(wrapped)
 // user authentication failed
-//
-// Caused by:
 // - expired token
 ```
 
-Wrapped errors can be nested. Wrapping an already wrapped error adds it to the 'Caused by' list, as
+Wrapped errors can be nested. Wrapping an already wrapped error adds it to the error list, as
 follows:
 
 ```go
 wrapped2 := wrap.Error(wrapped, "failed to update username")
 fmt.Println(wrapped2)
 // failed to update username
-//
-// Caused by:
 // - user authentication failed
 // - expired token
 ```
@@ -61,8 +55,6 @@ err := errors.New("username already taken")
 wrapped := wrap.Errorf(err, "failed to create user with name '%s'", "hermannm")
 fmt.Println(wrapped)
 // failed to create user with name 'hermannm'
-//
-// Caused by:
 // - username already taken
 ```
 
@@ -74,8 +66,6 @@ err2 := errors.New("invalid email")
 wrapped := wrap.Errors("user creation failed", err1, err2)
 fmt.Println(wrapped)
 // user creation failed
-//
-// Caused by:
 // - username too long
 // - invalid email
 ```
@@ -89,13 +79,7 @@ inner := wrap.Errors("user creation failed", err1, err2)
 outer := wrap.Error(inner, "failed to register new user")
 fmt.Println(outer)
 // failed to register new user
-//
-// Caused by:
 // - user creation failed
 //   - username too long
 //   - invalid email
 ```
-
-## Credits
-
-- Rust's [anyhow](https://crates.io/crates/anyhow) crate, which inspired the error format

@@ -15,20 +15,16 @@ import (
 //	wrapped := wrap.Error(err, "user authentication failed")
 //	fmt.Println(wrapped)
 //	// user authentication failed
-//	//
-//	// Caused by:
 //	// - expired token
 //
-// Wrapped errors can be nested. Wrapping an already wrapped error adds it to the 'Caused by' list,
-// as follows:
+// Wrapped errors can be nested. Wrapping an already wrapped error adds it to the error list, as
+// follows:
 //
 //	err := errors.New("expired token")
 //	inner := wrap.Error(err, "user authentication failed")
 //	outer := wrap.Error(inner, "failed to update username")
 //	fmt.Println(outer)
 //	// failed to update username
-//	//
-//	// Caused by:
 //	// - user authentication failed
 //	// - expired token
 //
@@ -38,8 +34,8 @@ func Error(wrapped error, message string) error {
 	return wrappedError{wrapped: wrapped, message: message}
 }
 
-// Errorf wraps the given error with a message for context, like [Error]. It forwards the given
-// format string and args to [fmt.Sprintf] to construct the message.
+// Errorf wraps the given error with a message for context. It forwards the given format string and
+// args to [fmt.Sprintf] to construct the message.
 //
 // Example:
 //
@@ -47,8 +43,6 @@ func Error(wrapped error, message string) error {
 //	wrapped := wrap.Errorf(err, "failed to create user with name '%s'", "hermannm")
 //	fmt.Println(wrapped)
 //	// failed to create user with name 'hermannm'
-//	//
-//	// Caused by:
 //	// - username already taken
 func Errorf(wrapped error, format string, args ...any) error {
 	return Error(wrapped, fmt.Sprintf(format, args...))
@@ -63,8 +57,6 @@ func Errorf(wrapped error, format string, args ...any) error {
 //	wrapped := wrap.Errors("user creation failed", err1, err2)
 //	fmt.Println(wrapped)
 //	// user creation failed
-//	//
-//	// Caused by:
 //	// - username too long
 //	// - invalid email
 //
@@ -76,8 +68,6 @@ func Errorf(wrapped error, format string, args ...any) error {
 //	outer := wrap.Error(inner, "failed to register new user")
 //	fmt.Println(outer)
 //	// failed to register new user
-//	//
-//	// Caused by:
 //	// - user creation failed
 //	//   - username too long
 //	//   - invalid email
@@ -116,12 +106,8 @@ func (err wrappedErrors) Unwrap() []error {
 
 func buildErrorString(message string, wrappedErrs []error) string {
 	var errString strings.Builder
-
 	errString.WriteString(message)
-	errString.WriteString("\n\nCaused by:")
-
 	buildErrorList(&errString, wrappedErrs, 1)
-
 	return errString.String()
 }
 

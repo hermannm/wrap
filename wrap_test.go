@@ -12,8 +12,6 @@ func TestError(t *testing.T) {
 	wrapped := wrap.Error(err, "wrapped error")
 
 	expected := `wrapped error
-
-Caused by:
 - error`
 
 	assertEqualErrorStrings(t, wrapped, expected)
@@ -24,8 +22,6 @@ func TestErrorf(t *testing.T) {
 	wrapped := wrap.Errorf(err, "failed to create user with name '%s'", "hermannm")
 
 	expected := `failed to create user with name 'hermannm'
-
-Caused by:
 - username already taken`
 
 	assertEqualErrorStrings(t, wrapped, expected)
@@ -37,8 +33,6 @@ func TestErrors(t *testing.T) {
 	wrapped := wrap.Errors("wrapped errors", err1, err2)
 
 	expected := `wrapped errors
-
-Caused by:
 - error 1
 - error 2`
 
@@ -51,8 +45,6 @@ func TestNestedError(t *testing.T) {
 	outer := wrap.Error(inner, "outer wrapped error")
 
 	expected := `outer wrapped error
-
-Caused by:
 - inner wrapped error
 - error`
 
@@ -73,8 +65,6 @@ func TestNestedErrors(t *testing.T) {
 	outer := wrap.Errors("outer wrapped error", inner1, inner4)
 
 	expected := `outer wrapped error
-
-Caused by:
 - inner wrapped errors 1
   - error 1
   - error 2
@@ -97,8 +87,6 @@ errors`, err1, err2)
 	outer := wrap.Error(inner, "outer wrapped error")
 
 	expected := `outer wrapped error
-
-Caused by:
 - wrapped multiline
   errors
   - multiline
