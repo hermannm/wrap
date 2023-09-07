@@ -2,6 +2,7 @@ package wrap_test
 
 import (
 	"errors"
+	"io/fs"
 	"testing"
 
 	"hermannm.dev/wrap"
@@ -95,6 +96,45 @@ errors`, err1, err2)
     error 2`
 
 	assertEqualErrorStrings(t, outer, expected)
+}
+
+func TestErrorsIs(t *testing.T) {
+	wrapped := wrap.Error(fs.ErrNotExist, "file not found")
+	if !errors.Is(wrapped, fs.ErrNotExist) {
+		t.Error("expected errors.Is to return true for wrapped error")
+	}
+
+	otherErr := errors.New("some other error")
+	wrapped2 := wrap.Errors("failed to find file, and got other error", otherErr, fs.ErrNotExist)
+	if !errors.Is(wrapped2, fs.ErrNotExist) {
+		t.Error("expected errors.Is to return true for wrapped errors")
+	}
+
+	wrapped3 := wrap.Error(wrapped2, "nested wrapped error")
+	if !errors.Is(wrapped3, fs.ErrNotExist) {
+		t.Error("expected errors.Is to return true for nested wrapped error")
+	}
+}
+
+func TestErrorsAs(t *testing.T) {
+	originalErr := &fs.PathError{
+		Op:   "open",
+		Path: "wrap/wra.go",
+		Err:  errors.New("no such file or directory"),
+	}
+	wrapped := wrap.Error(originalErr, "failed to read file")
+
+	var pathErr *fs.PathError
+	if !errors.As(wrapped, &pathErr) {
+		t.Error("expected errors.As to return true for wrapped error")
+	}
+
+	if pathErr != originalErr {
+		t.Errorf(
+			"expected error gotten from errors.As to equal original wrapped error; got %+v, want %+v",
+			*pathErr, *originalErr,
+		)
+	}
 }
 
 func assertEqualErrorStrings(t *testing.T, errToTest error, expected string) {
