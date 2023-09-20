@@ -132,7 +132,8 @@ func TestErrorsAs(t *testing.T) {
 	if pathErr != originalErr {
 		t.Errorf(
 			"expected error gotten from errors.As to equal original wrapped error; got %+v, want %+v",
-			*pathErr, *originalErr,
+			*pathErr,
+			*originalErr,
 		)
 	}
 }
