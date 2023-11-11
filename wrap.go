@@ -85,7 +85,10 @@ type WrappedError struct {
 }
 
 func (err WrappedError) Error() string {
-	return buildErrorString(err.Message, []error{err.Wrapped})
+	var errString strings.Builder
+	errString.WriteString(err.Message)
+	writeErrorListItem(&errString, err.Wrapped, 1, 1)
+	return errString.String()
 }
 
 func (err WrappedError) Unwrap() error {
@@ -99,43 +102,49 @@ type WrappedErrors struct {
 }
 
 func (err WrappedErrors) Error() string {
-	return buildErrorString(err.Message, err.Wrapped)
+	var errString strings.Builder
+	errString.WriteString(err.Message)
+	writeErrorList(&errString, err.Wrapped, 1)
+	return errString.String()
 }
 
 func (err WrappedErrors) Unwrap() []error {
 	return err.Wrapped
 }
 
-func buildErrorString(message string, wrappedErrs []error) string {
-	var errString strings.Builder
-	errString.WriteString(message)
-	buildErrorList(&errString, wrappedErrs, 1)
-	return errString.String()
+func writeErrorList(errString *strings.Builder, wrappedErrs []error, indent int) {
+	for _, wrappedErr := range wrappedErrs {
+		writeErrorListItem(errString, wrappedErr, indent, len(wrappedErrs))
+	}
 }
 
-func buildErrorList(errString *strings.Builder, wrappedErrs []error, indent int) {
-	for _, wrappedErr := range wrappedErrs {
-		errString.WriteRune('\n')
-		for i := 1; i < indent; i++ {
-			errString.WriteString("  ")
-		}
-		errString.WriteString("- ")
+func writeErrorListItem(
+	errString *strings.Builder,
+	wrappedErr error,
+	indent int,
+	siblingCount int,
+) {
+	errString.WriteRune('\n')
+	for i := 1; i < indent; i++ {
+		errString.WriteString("  ")
+	}
+	errString.WriteString("- ")
 
-		switch err := wrappedErr.(type) {
-		case WrappedError:
-			writeErrorMessage(errString, err.Message, indent)
+	switch err := wrappedErr.(type) {
+	case WrappedError:
+		writeErrorMessage(errString, err.Message, indent)
 
-			nextIndent := indent
-			if len(wrappedErrs) > 1 {
-				nextIndent++
-			}
-			buildErrorList(errString, []error{err.Wrapped}, nextIndent)
-		case WrappedErrors:
-			writeErrorMessage(errString, err.Message, indent)
-			buildErrorList(errString, err.Wrapped, indent+1)
-		default:
-			writeErrorMessage(errString, err.Error(), indent)
+		nextIndent := indent
+		if siblingCount > 1 {
+			nextIndent++
+			siblingCount = 1
 		}
+		writeErrorListItem(errString, err.Wrapped, nextIndent, siblingCount)
+	case WrappedErrors:
+		writeErrorMessage(errString, err.Message, indent)
+		writeErrorList(errString, err.Wrapped, indent+1)
+	default:
+		writeErrorMessage(errString, err.Error(), indent)
 	}
 }
 
@@ -143,7 +152,7 @@ func writeErrorMessage(errString *strings.Builder, message string, indent int) {
 	lines := strings.SplitAfter(message, "\n")
 	for i, line := range lines {
 		if i > 0 {
-			for i := 1; i <= indent; i++ {
+			for j := 0; j < indent; j++ {
 				errString.WriteString("  ")
 			}
 		}
