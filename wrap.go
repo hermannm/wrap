@@ -31,7 +31,7 @@ import (
 // The returned error implements the Unwrap method from the standard errors package, so it works
 // with [errors.Is] and [errors.As].
 func Error(wrapped error, message string) error {
-	return wrappedError{wrapped: wrapped, message: message}
+	return WrappedError{Wrapped: wrapped, Message: message}
 }
 
 // Errorf wraps the given error with a message for context. It forwards the given format string and
@@ -75,33 +75,35 @@ func Errorf(wrapped error, format string, args ...any) error {
 // The returned error implements the Unwrap method from the standard errors package, so it works
 // with [errors.Is] and [errors.As].
 func Errors(message string, wrapped ...error) error {
-	return wrappedErrors{wrapped: wrapped, message: message}
+	return WrappedErrors{Wrapped: wrapped, Message: message}
 }
 
-type wrappedError struct {
-	wrapped error
-	message string
+// WrappedError is the type returned by [Error] and [Errorf].
+type WrappedError struct {
+	Wrapped error
+	Message string
 }
 
-func (err wrappedError) Error() string {
-	return buildErrorString(err.message, []error{err.wrapped})
+func (err WrappedError) Error() string {
+	return buildErrorString(err.Message, []error{err.Wrapped})
 }
 
-func (err wrappedError) Unwrap() error {
-	return err.wrapped
+func (err WrappedError) Unwrap() error {
+	return err.Wrapped
 }
 
-type wrappedErrors struct {
-	wrapped []error
-	message string
+// WrappedErrors is the type returned by [Errors].
+type WrappedErrors struct {
+	Wrapped []error
+	Message string
 }
 
-func (err wrappedErrors) Error() string {
-	return buildErrorString(err.message, err.wrapped)
+func (err WrappedErrors) Error() string {
+	return buildErrorString(err.Message, err.Wrapped)
 }
 
-func (err wrappedErrors) Unwrap() []error {
-	return err.wrapped
+func (err WrappedErrors) Unwrap() []error {
+	return err.Wrapped
 }
 
 func buildErrorString(message string, wrappedErrs []error) string {
@@ -120,17 +122,17 @@ func buildErrorList(errString *strings.Builder, wrappedErrs []error, indent int)
 		errString.WriteString("- ")
 
 		switch err := wrappedErr.(type) {
-		case wrappedError:
-			writeErrorMessage(errString, err.message, indent)
+		case WrappedError:
+			writeErrorMessage(errString, err.Message, indent)
 
 			nextIndent := indent
 			if len(wrappedErrs) > 1 {
 				nextIndent++
 			}
-			buildErrorList(errString, []error{err.wrapped}, nextIndent)
-		case wrappedErrors:
-			writeErrorMessage(errString, err.message, indent)
-			buildErrorList(errString, err.wrapped, indent+1)
+			buildErrorList(errString, []error{err.Wrapped}, nextIndent)
+		case WrappedErrors:
+			writeErrorMessage(errString, err.Message, indent)
+			buildErrorList(errString, err.Wrapped, indent+1)
 		default:
 			writeErrorMessage(errString, err.Error(), indent)
 		}
