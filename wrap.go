@@ -31,7 +31,7 @@ import (
 // The returned error implements the Unwrap method from the standard errors package, so it works
 // with [errors.Is] and [errors.As].
 func Error(wrapped error, message string) error {
-	return WrappedError{Wrapped: wrapped, Message: message}
+	return WrappedError{Cause: wrapped, Message: message}
 }
 
 // Errorf wraps the given error with a message for context. It forwards the given format string and
@@ -75,41 +75,41 @@ func Errorf(wrapped error, format string, args ...any) error {
 // The returned error implements the Unwrap method from the standard errors package, so it works
 // with [errors.Is] and [errors.As].
 func Errors(message string, wrapped ...error) error {
-	return WrappedErrors{Wrapped: wrapped, Message: message}
+	return WrappedErrors{Cause: wrapped, Message: message}
 }
 
 // WrappedError is the type returned by [Error] and [Errorf].
 type WrappedError struct {
-	Wrapped error
 	Message string
+	Cause   error
 }
 
 func (err WrappedError) Error() string {
 	var errString strings.Builder
 	errString.WriteString(err.Message)
-	writeErrorListItem(&errString, err.Wrapped, 1, 1)
+	writeErrorListItem(&errString, err.Cause, 1, 1)
 	return errString.String()
 }
 
 func (err WrappedError) Unwrap() error {
-	return err.Wrapped
+	return err.Cause
 }
 
 // WrappedErrors is the type returned by [Errors].
 type WrappedErrors struct {
-	Wrapped []error
 	Message string
+	Cause   []error
 }
 
 func (err WrappedErrors) Error() string {
 	var errString strings.Builder
 	errString.WriteString(err.Message)
-	writeErrorList(&errString, err.Wrapped, 1)
+	writeErrorList(&errString, err.Cause, 1)
 	return errString.String()
 }
 
 func (err WrappedErrors) Unwrap() []error {
-	return err.Wrapped
+	return err.Cause
 }
 
 func writeErrorList(errString *strings.Builder, wrappedErrs []error, indent int) {
@@ -139,10 +139,10 @@ func writeErrorListItem(
 			nextIndent++
 			siblingCount = 1
 		}
-		writeErrorListItem(errString, err.Wrapped, nextIndent, siblingCount)
+		writeErrorListItem(errString, err.Cause, nextIndent, siblingCount)
 	case WrappedErrors:
 		writeErrorMessage(errString, err.Message, indent)
-		writeErrorList(errString, err.Wrapped, indent+1)
+		writeErrorList(errString, err.Cause, indent+1)
 	default:
 		writeErrorMessage(errString, err.Error(), indent)
 	}
