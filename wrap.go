@@ -75,7 +75,7 @@ func Errorf(wrapped error, format string, args ...any) error {
 // The returned error implements the Unwrap method from the standard errors package, so it works
 // with [errors.Is] and [errors.As].
 func Errors(message string, wrapped ...error) error {
-	return WrappedErrors{Cause: wrapped, Message: message}
+	return WrappedErrors{Message: message, Causes: wrapped}
 }
 
 // WrappedError is the type returned by [Error] and [Errorf].
@@ -98,24 +98,18 @@ func (err WrappedError) Unwrap() error {
 // WrappedErrors is the type returned by [Errors].
 type WrappedErrors struct {
 	Message string
-	Cause   []error
+	Causes  []error
 }
 
 func (err WrappedErrors) Error() string {
 	var errString strings.Builder
 	errString.WriteString(err.Message)
-	writeErrorList(&errString, err.Cause, 1)
+	writeErrorList(&errString, err.Causes, 1)
 	return errString.String()
 }
 
 func (err WrappedErrors) Unwrap() []error {
-	return err.Cause
-}
-
-func writeErrorList(errString *strings.Builder, wrappedErrs []error, indent int) {
-	for _, wrappedErr := range wrappedErrs {
-		writeErrorListItem(errString, wrappedErr, indent, len(wrappedErrs))
-	}
+	return err.Causes
 }
 
 func writeErrorListItem(
@@ -142,9 +136,15 @@ func writeErrorListItem(
 		writeErrorListItem(errString, err.Cause, nextIndent, siblingCount)
 	case WrappedErrors:
 		writeErrorMessage(errString, err.Message, indent)
-		writeErrorList(errString, err.Cause, indent+1)
+		writeErrorList(errString, err.Causes, indent+1)
 	default:
 		writeErrorMessage(errString, err.Error(), indent)
+	}
+}
+
+func writeErrorList(errString *strings.Builder, wrappedErrs []error, indent int) {
+	for _, wrappedErr := range wrappedErrs {
+		writeErrorListItem(errString, wrappedErr, indent, len(wrappedErrs))
 	}
 }
 
