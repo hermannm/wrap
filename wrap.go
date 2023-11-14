@@ -91,8 +91,14 @@ func (err WrappedError) Error() string {
 	return errString.String()
 }
 
+// Unwrap matches the signature for wrapped errors expected by the [errors] package.
 func (err WrappedError) Unwrap() error {
 	return err.Cause
+}
+
+// WrappingMessage implements [hermannm.dev/devlog/log.WrappedError] for log output formatting.
+func (err WrappedError) WrappingMessage() string {
+	return err.Message
 }
 
 // WrappedErrors is the type returned by [Errors].
@@ -108,8 +114,14 @@ func (err WrappedErrors) Error() string {
 	return errString.String()
 }
 
+// Unwrap matches the signature for wrapped errors expected by the [errors] package.
 func (err WrappedErrors) Unwrap() []error {
 	return err.Causes
+}
+
+// WrappingMessage implements [hermannm.dev/devlog/log.WrappedError] for log output formatting.
+func (err WrappedErrors) WrappingMessage() string {
+	return err.Message
 }
 
 func writeErrorListItem(
