@@ -31,10 +31,10 @@ import (
 // The returned error implements the Unwrap method from the standard errors package, so it works
 // with [errors.Is] and [errors.As].
 func Error(wrapped error, message string) error {
-	return WrappedError{Cause: wrapped, Message: message}
+	return wrappedError{wrapped: wrapped, message: message}
 }
 
-// Errorf wraps the given error with a message for context. It forwards the given format string and
+// Errorf wraps the given error with a message for context. It forwards the given message format and
 // args to [fmt.Sprintf] to construct the message.
 //
 // Example:
@@ -44,8 +44,8 @@ func Error(wrapped error, message string) error {
 //	fmt.Println(wrapped)
 //	// failed to create user with name 'hermannm'
 //	// - username already taken
-func Errorf(wrapped error, format string, args ...any) error {
-	return Error(wrapped, fmt.Sprintf(format, args...))
+func Errorf(wrapped error, messageFormat string, formatArgs ...any) error {
+	return Error(wrapped, fmt.Sprintf(messageFormat, formatArgs...))
 }
 
 // Errors wraps the given errors with a message for context.
@@ -75,53 +75,51 @@ func Errorf(wrapped error, format string, args ...any) error {
 // The returned error implements the Unwrap method from the standard errors package, so it works
 // with [errors.Is] and [errors.As].
 func Errors(message string, wrapped ...error) error {
-	return WrappedErrors{Message: message, Causes: wrapped}
+	return wrappedErrors{message: message, wrapped: wrapped}
 }
 
-// WrappedError is the type returned by [Error] and [Errorf].
-type WrappedError struct {
-	Message string
-	Cause   error
+type wrappedError struct {
+	message string
+	wrapped error
 }
 
-func (err WrappedError) Error() string {
+func (err wrappedError) Error() string {
 	var errString strings.Builder
-	errString.WriteString(err.Message)
-	writeErrorListItem(&errString, err.Cause, 1, 1)
+	errString.WriteString(err.message)
+	writeErrorListItem(&errString, err.wrapped, 1, 1)
 	return errString.String()
 }
 
 // Unwrap matches the signature for wrapped errors expected by the [errors] package.
-func (err WrappedError) Unwrap() error {
-	return err.Cause
+func (err wrappedError) Unwrap() error {
+	return err.wrapped
 }
 
-// WrappingMessage implements [hermannm.dev/devlog/log.WrappedError] for log output formatting.
-func (err WrappedError) WrappingMessage() string {
-	return err.Message
+// WrappingMessage implements [hermannm.dev/devlog/log.WrappedError] for log message formatting.
+func (err wrappedError) WrappingMessage() string {
+	return err.message
 }
 
-// WrappedErrors is the type returned by [Errors].
-type WrappedErrors struct {
-	Message string
-	Causes  []error
+type wrappedErrors struct {
+	message string
+	wrapped []error
 }
 
-func (err WrappedErrors) Error() string {
+func (err wrappedErrors) Error() string {
 	var errString strings.Builder
-	errString.WriteString(err.Message)
-	writeErrorList(&errString, err.Causes, 1)
+	errString.WriteString(err.message)
+	writeErrorList(&errString, err.wrapped, 1)
 	return errString.String()
 }
 
 // Unwrap matches the signature for wrapped errors expected by the [errors] package.
-func (err WrappedErrors) Unwrap() []error {
-	return err.Causes
+func (err wrappedErrors) Unwrap() []error {
+	return err.wrapped
 }
 
-// WrappingMessage implements [hermannm.dev/devlog/log.WrappedError] for log output formatting.
-func (err WrappedErrors) WrappingMessage() string {
-	return err.Message
+// WrappingMessage implements [hermannm.dev/devlog/log.WrappedError] for log message formatting.
+func (err wrappedErrors) WrappingMessage() string {
+	return err.message
 }
 
 func writeErrorListItem(
@@ -137,18 +135,18 @@ func writeErrorListItem(
 	errString.WriteString("- ")
 
 	switch err := wrappedErr.(type) {
-	case WrappedError:
-		writeErrorMessage(errString, err.Message, indent)
+	case wrappedError:
+		writeErrorMessage(errString, err.message, indent)
 
 		nextIndent := indent
 		if siblingCount > 1 {
 			nextIndent++
 			siblingCount = 1
 		}
-		writeErrorListItem(errString, err.Cause, nextIndent, siblingCount)
-	case WrappedErrors:
-		writeErrorMessage(errString, err.Message, indent)
-		writeErrorList(errString, err.Causes, indent+1)
+		writeErrorListItem(errString, err.wrapped, nextIndent, siblingCount)
+	case wrappedErrors:
+		writeErrorMessage(errString, err.message, indent)
+		writeErrorList(errString, err.wrapped, indent+1)
 	default:
 		writeErrorMessage(errString, err.Error(), indent)
 	}
