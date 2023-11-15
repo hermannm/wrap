@@ -84,10 +84,10 @@ type wrappedError struct {
 }
 
 func (err wrappedError) Error() string {
-	var errString strings.Builder
-	errString.WriteString(err.message)
-	writeErrorListItem(&errString, err.wrapped, 1, 1)
-	return errString.String()
+	var builder errorBuilder
+	builder.WriteString(err.message)
+	builder.writeErrorListItem(err.wrapped, 1, false)
+	return builder.String()
 }
 
 // Unwrap matches the signature for wrapped errors expected by the [errors] package.
@@ -106,10 +106,10 @@ type wrappedErrors struct {
 }
 
 func (err wrappedErrors) Error() string {
-	var errString strings.Builder
-	errString.WriteString(err.message)
-	writeErrorList(&errString, err.wrapped, 1)
-	return errString.String()
+	var builder errorBuilder
+	builder.WriteString(err.message)
+	builder.writeErrorList(err.wrapped, 1)
+	return builder.String()
 }
 
 // Unwrap matches the signature for wrapped errors expected by the [errors] package.
@@ -122,50 +122,128 @@ func (err wrappedErrors) WrappingMessage() string {
 	return err.message
 }
 
-func writeErrorListItem(
-	errString *strings.Builder,
-	wrappedErr error,
-	indent int,
-	siblingCount int,
-) {
-	errString.WriteRune('\n')
-	for i := 1; i < indent; i++ {
-		errString.WriteString("  ")
-	}
-	errString.WriteString("- ")
+type errorBuilder struct {
+	strings.Builder
+}
+
+func (builder *errorBuilder) writeErrorListItem(wrappedErr error, indent int, partOfList bool) {
+	builder.writeListItemPrefix(indent)
 
 	switch err := wrappedErr.(type) {
 	case wrappedError:
-		writeErrorMessage(errString, err.message, indent)
+		builder.writeErrorMessage([]byte(err.message), indent)
 
 		nextIndent := indent
-		if siblingCount > 1 {
+		if partOfList {
 			nextIndent++
-			siblingCount = 1
 		}
-		writeErrorListItem(errString, err.wrapped, nextIndent, siblingCount)
+		builder.writeErrorListItem(err.wrapped, nextIndent, false)
 	case wrappedErrors:
-		writeErrorMessage(errString, err.message, indent)
-		writeErrorList(errString, err.wrapped, indent+1)
+		builder.writeErrorMessage([]byte(err.message), indent)
+		builder.writeErrorList(err.wrapped, indent+1)
 	default:
-		writeErrorMessage(errString, err.Error(), indent)
+		builder.writeExternalErrorMessage([]byte(err.Error()), indent, partOfList)
 	}
 }
 
-func writeErrorList(errString *strings.Builder, wrappedErrs []error, indent int) {
+func (builder *errorBuilder) writeErrorList(wrappedErrs []error, indent int) {
 	for _, wrappedErr := range wrappedErrs {
-		writeErrorListItem(errString, wrappedErr, indent, len(wrappedErrs))
+		builder.writeErrorListItem(wrappedErr, indent, len(wrappedErrs) > 1)
 	}
 }
 
-func writeErrorMessage(errString *strings.Builder, message string, indent int) {
-	lines := strings.SplitAfter(message, "\n")
-	for i, line := range lines {
-		if i > 0 {
-			for j := 0; j < indent; j++ {
-				errString.WriteString("  ")
+// Splits error messages longer than 64 characters at ": " (typically used for error wrapping), if
+// present. Ensures that no splits are shorter than 16 characters (except the last one).
+func (builder *errorBuilder) writeExternalErrorMessage(
+	message []byte,
+	indent int,
+	partOfList bool,
+) {
+	const minSplitLength = 16
+	const maxSplitLength = 64
+
+	if len(message) <= maxSplitLength {
+		builder.writeErrorMessage(message, indent)
+		return
+	}
+
+	lastWriteIndex := 0
+
+MessageLoop:
+	for i := 0; i < len(message)-1; i++ {
+		switch message[i] {
+		case ':':
+			// Safe to index [i+1], since we loop until the second-to-last index
+			switch message[i+1] {
+			case ' ', '\n':
+				if i-lastWriteIndex < minSplitLength {
+					continue MessageLoop
+				}
+
+				// First split
+				if lastWriteIndex == 0 {
+					if partOfList {
+						indent++
+					}
+				} else {
+					builder.writeListItemPrefix(indent)
+				}
+
+				builder.Write(message[lastWriteIndex:i])
+
+				lastWriteIndex = i + 2 // +2 for ': '
+				if len(message)-lastWriteIndex <= maxSplitLength {
+					break MessageLoop // Remaining message is short enough, we're done
+				}
+
+				i++ // Skips next character, since we already looked at it
 			}
+		case '\n':
+			// Once we hit a newline (not preceded by ':'), we only indent the remainder of the
+			// message
+			if lastWriteIndex != 0 {
+				builder.writeListItemPrefix(indent)
+			}
+			builder.Write(message[lastWriteIndex : i+1])
+			builder.writeIndent(indent + 1)
+			builder.writeErrorMessage(message[i+1:], indent)
+			return
 		}
-		errString.WriteString(line)
+	}
+
+	if lastWriteIndex == 0 {
+		builder.writeErrorMessage(message, indent)
+		return
+	}
+
+	// Writes remainder after last split
+	builder.writeListItemPrefix(indent)
+	builder.writeErrorMessage(message[lastWriteIndex:], indent)
+}
+
+func (builder *errorBuilder) writeErrorMessage(message []byte, indent int) {
+	indent++ // Since indent is made for list bullet points, we want to indent one level deeper
+
+	lastWriteIndex := 0
+	for i := 0; i < len(message)-1; i++ {
+		if message[i] == '\n' {
+			builder.Write(message[lastWriteIndex : i+1])
+			builder.writeIndent(indent)
+			lastWriteIndex = i + 1
+		}
+	}
+
+	builder.Write(message[lastWriteIndex:])
+}
+
+func (builder *errorBuilder) writeListItemPrefix(indent int) {
+	builder.WriteByte('\n')
+	builder.writeIndent(indent)
+	builder.WriteString("- ")
+}
+
+func (builder *errorBuilder) writeIndent(indent int) {
+	for i := 1; i < indent; i++ {
+		builder.WriteString("  ")
 	}
 }
