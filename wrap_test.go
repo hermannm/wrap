@@ -98,6 +98,70 @@ errors`, err1, err2)
 	assertEqualErrorStrings(t, outer, expected)
 }
 
+func TestLongErrorMessage(t *testing.T) {
+	err := errors.New(
+		"this error message is more than 16 characters: " +
+			"less than 16: " +
+			"now again longer than 16 characters: " +
+			"this is a long error message, of barely less than 64 characters: " +
+			"short message",
+	)
+	wrapped := wrap.Error(err, "wrapped error")
+
+	expected := `wrapped error
+- this error message is more than 16 characters
+- less than 16: now again longer than 16 characters
+- this is a long error message, of barely less than 64 characters
+- short message`
+
+	assertEqualErrorStrings(t, wrapped, expected)
+}
+
+func TestLongErrorMessageInList(t *testing.T) {
+	err1 := errors.New(
+		"this is a long error message, of barely less than 64 characters: " +
+			"this error message is more than 16 characters: " +
+			"and another one longer than 16 characters",
+	)
+	err2 := errors.New("other error")
+	wrapped := wrap.Errors("wrapped error", err1, err2)
+
+	expected := `wrapped error
+- this is a long error message, of barely less than 64 characters
+  - this error message is more than 16 characters
+  - and another one longer than 16 characters
+- other error`
+
+	assertEqualErrorStrings(t, wrapped, expected)
+}
+
+func TestLongMultilineErrorMessage(t *testing.T) {
+	err := errors.New(`this error message ends in a newline and colon:
+more than 16 characters: this message ends in a newline
+another message ending in a newline and colon:
+another newline message`)
+	wrapped := wrap.Error(err, "wrapped error")
+
+	expected := `wrapped error
+- this error message ends in a newline and colon
+- more than 16 characters
+- this message ends in a newline
+  another message ending in a newline and colon:
+  another newline message`
+
+	assertEqualErrorStrings(t, wrapped, expected)
+}
+
+func TestUnsplittableErrorMessage(t *testing.T) {
+	err := errors.New("this is a super long error message of more than 64 characters in total")
+	wrapped := wrap.Error(err, "wrapped error")
+
+	expected := `wrapped error
+- this is a super long error message of more than 64 characters in total`
+
+	assertEqualErrorStrings(t, wrapped, expected)
+}
+
 func TestErrorsIs(t *testing.T) {
 	wrapped := wrap.Error(fs.ErrNotExist, "file not found")
 	if !errors.Is(wrapped, fs.ErrNotExist) {
