@@ -132,15 +132,16 @@ func (builder *errorBuilder) writeErrorListItem(wrappedErr error, indent int, pa
 	switch err := wrappedErr.(type) {
 	case wrappedError:
 		builder.writeErrorMessage([]byte(err.message), indent)
-
-		nextIndent := indent
 		if partOfList {
-			nextIndent++
+			indent++
 		}
-		builder.writeErrorListItem(err.wrapped, nextIndent, false)
+		builder.writeErrorListItem(err.wrapped, indent, false)
 	case wrappedErrors:
 		builder.writeErrorMessage([]byte(err.message), indent)
-		builder.writeErrorList(err.wrapped, indent+1)
+		if partOfList || len(err.wrapped) > 1 {
+			indent++
+		}
+		builder.writeErrorList(err.wrapped, indent)
 	default:
 		builder.writeExternalErrorMessage([]byte(err.Error()), indent, partOfList)
 	}
