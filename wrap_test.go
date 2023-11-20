@@ -98,6 +98,26 @@ errors`, err1, err2)
 	assertEqualErrorStrings(t, outer, expected)
 }
 
+func TestSingleWrappedErrors(t *testing.T) {
+	err1 := errors.New("error 1")
+	wrapped1 := wrap.Errors("wrapped 1", err1)
+	wrapped2 := wrap.Error(wrapped1, "wrapped 2")
+
+	err2 := errors.New("error 2")
+	wrapped3 := wrap.Errors("wrapped 3", err2)
+
+	wrapped4 := wrap.Errors("wrapped 4", wrapped2, wrapped3)
+
+	expected := `wrapped 4
+- wrapped 2
+  - wrapped 1
+  - error 1
+- wrapped 3
+  - error 2`
+
+	assertEqualErrorStrings(t, wrapped4, expected)
+}
+
 func TestLongErrorMessage(t *testing.T) {
 	err := errors.New(
 		"this error message is more than 16 characters: " +
