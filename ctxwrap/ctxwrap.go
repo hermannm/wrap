@@ -241,9 +241,8 @@ func ErrorWithAttrs(
 //
 // The following example:
 //
-//	err1 := errors.New("username too long")
-//	err2 := errors.New("invalid email")
-//	wrapped := ctxwrap.Errors(ctx, "user creation failed", err1, err2)
+//	errs := []error{errors.New("username too long"), errors.New("invalid email")}
+//	wrapped := ctxwrap.Errors(ctx, errs, "user creation failed")
 //	fmt.Println(wrapped)
 //
 // ...produces this error string:
@@ -254,9 +253,8 @@ func ErrorWithAttrs(
 //
 // When combined with [ctxwrap.Error], nested wrapped errors are indented, so this next example:
 //
-//	err1 := errors.New("username too long")
-//	err2 := errors.New("invalid email")
-//	inner := ctxwrap.Errors(ctx, "user creation failed", err1, err2)
+//	errs := []error{errors.New("username too long"), errors.New("invalid email")}
+//	inner := ctxwrap.Errors(ctx, errs, "user creation failed")
 //	outer := ctxwrap.Error(ctx, inner, "failed to register new user")
 //	fmt.Println(outer)
 //
@@ -266,7 +264,7 @@ func ErrorWithAttrs(
 //	- user creation failed
 //	  - username too long
 //	  - invalid email
-func Errors(ctx context.Context, message string, wrapped ...error) error {
+func Errors(ctx context.Context, wrapped []error, message string) error {
 	return wrappedErrors{ctx, wrapped, message}
 }
 
@@ -308,9 +306,8 @@ func Errors(ctx context.Context, message string, wrapped ...error) error {
 //
 // The following example:
 //
-//	err1 := errors.New("username too long")
-//	err2 := errors.New("invalid email")
-//	wrapped := ctxwrap.Errors(ctx, "user creation failed", err1, err2)
+//	errs := []error{errors.New("username too long"), errors.New("invalid email")}
+//	wrapped := ctxwrap.Errors(ctx, errs, "user creation failed")
 //	fmt.Println(wrapped)
 //
 // ...produces this error string:
@@ -321,9 +318,8 @@ func Errors(ctx context.Context, message string, wrapped ...error) error {
 //
 // When combined with [ctxwrap.Error], nested wrapped errors are indented, so this next example:
 //
-//	err1 := errors.New("username too long")
-//	err2 := errors.New("invalid email")
-//	inner := ctxwrap.Errors(ctx, "user creation failed", err1, err2)
+//	errs := []error{errors.New("username too long"), errors.New("invalid email")}
+//	inner := ctxwrap.Errors(ctx, errs, "user creation failed")
 //	outer := ctxwrap.Error(ctx, inner, "failed to register new user")
 //	fmt.Println(outer)
 //
@@ -333,8 +329,6 @@ func Errors(ctx context.Context, message string, wrapped ...error) error {
 //	- user creation failed
 //	  - username too long
 //	  - invalid email
-//
-// [hermannm.dev/devlog/log]: https://pkg.go.dev/hermannm.dev/devlog/log
 func ErrorsWithAttrs(
 	ctx context.Context,
 	wrapped []error,

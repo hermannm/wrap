@@ -152,9 +152,8 @@ func ErrorWithAttrs(wrapped error, message string, logAttributes ...any) error {
 //
 // The following example:
 //
-//	err1 := errors.New("username too long")
-//	err2 := errors.New("invalid email")
-//	wrapped := wrap.Errors("user creation failed", err1, err2)
+//	errs := []error{errors.New("username too long"), errors.New("invalid email")}
+//	wrapped := wrap.Errors(errs, "user creation failed")
 //	fmt.Println(wrapped)
 //
 // ...produces this error string:
@@ -165,9 +164,8 @@ func ErrorWithAttrs(wrapped error, message string, logAttributes ...any) error {
 //
 // When combined with [wrap.Error], nested wrapped errors are indented, so this next example:
 //
-//	err1 := errors.New("username too long")
-//	err2 := errors.New("invalid email")
-//	inner := wrap.Errors("user creation failed", err1, err2)
+//	errs := []error{errors.New("username too long"), errors.New("invalid email")}
+//	inner := wrap.Errors(errs, "user creation failed")
 //	outer := wrap.Error(inner, "failed to register new user")
 //	fmt.Println(outer)
 //
@@ -177,7 +175,7 @@ func ErrorWithAttrs(wrapped error, message string, logAttributes ...any) error {
 //	- user creation failed
 //	  - username too long
 //	  - invalid email
-func Errors(message string, wrapped ...error) error {
+func Errors(wrapped []error, message string) error {
 	return wrappedErrors{wrapped, message}
 }
 
@@ -219,9 +217,8 @@ func Errors(message string, wrapped ...error) error {
 //
 // The following example:
 //
-//	err1 := errors.New("username too long")
-//	err2 := errors.New("invalid email")
-//	wrapped := wrap.Errors("user creation failed", err1, err2)
+//	errs := []error{errors.New("username too long"), errors.New("invalid email")}
+//	wrapped := wrap.Errors(errs, "user creation failed")
 //	fmt.Println(wrapped)
 //
 // ...produces this error string:
@@ -232,9 +229,8 @@ func Errors(message string, wrapped ...error) error {
 //
 // When combined with [wrap.Error], nested wrapped errors are indented, so this next example:
 //
-//	err1 := errors.New("username too long")
-//	err2 := errors.New("invalid email")
-//	inner := wrap.Errors("user creation failed", err1, err2)
+//	errs := []error{errors.New("username too long"), errors.New("invalid email")}
+//	inner := wrap.Errors(errs, "user creation failed")
 //	outer := wrap.Error(inner, "failed to register new user")
 //	fmt.Println(outer)
 //

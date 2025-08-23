@@ -30,13 +30,12 @@ func TestErrorf(t *testing.T) {
 }
 
 func TestErrors(t *testing.T) {
-	err1 := errors.New("error 1")
-	err2 := errors.New("error 2")
-	wrapped := wrap.Errors("wrapped errors", err1, err2)
+	errs := []error{errors.New("username too long"), errors.New("invalid email")}
+	wrapped := wrap.Errors(errs, "user creation failed")
 
-	expected := `wrapped errors
-- error 1
-- error 2`
+	expected := `user creation failed
+- username too long
+- invalid email`
 
 	assertEqualErrorStrings(t, wrapped, expected)
 }
@@ -54,17 +53,16 @@ func TestNestedError(t *testing.T) {
 }
 
 func TestNestedErrors(t *testing.T) {
-	err1 := errors.New("error 1")
-	err2 := errors.New("error 2")
-	err3 := errors.New("error 3")
-	err4 := errors.New("error 4")
+	wrappedErrs1 := []error{errors.New("error 1"), errors.New("error 2")}
+	inner1 := wrap.Errors(wrappedErrs1, "inner wrapped errors 1")
 
-	inner1 := wrap.Errors("inner wrapped errors 1", err1, err2)
-	inner2 := wrap.Errors("inner wrapped errors 2", err3, err4)
+	wrappedErrs2 := []error{errors.New("error 3"), errors.New("error 4")}
+	inner2 := wrap.Errors(wrappedErrs2, "inner wrapped errors 2")
+
 	inner3 := wrap.Error(inner2, "inner wrapped error 3")
 	inner4 := wrap.Error(inner3, "inner wrapped error 4")
 
-	outer := wrap.Errors("outer wrapped error", inner1, inner4)
+	outer := wrap.Errors([]error{inner1, inner4}, "outer wrapped error")
 
 	expected := `outer wrapped error
 - inner wrapped errors 1
@@ -89,10 +87,9 @@ error 1`,
 error 2`,
 	)
 	inner := wrap.Errors(
+		[]error{err1, err2},
 		`wrapped multiline
 errors`,
-		err1,
-		err2,
 	)
 	outer := wrap.Error(inner, "outer wrapped error")
 
@@ -109,13 +106,13 @@ errors`,
 
 func TestSingleWrappedErrors(t *testing.T) {
 	err1 := errors.New("error 1")
-	wrapped1 := wrap.Errors("wrapped 1", err1)
+	wrapped1 := wrap.Errors([]error{err1}, "wrapped 1")
 	wrapped2 := wrap.Error(wrapped1, "wrapped 2")
 
 	err2 := errors.New("error 2")
-	wrapped3 := wrap.Errors("wrapped 3", err2)
+	wrapped3 := wrap.Errors([]error{err2}, "wrapped 3")
 
-	wrapped4 := wrap.Errors("wrapped 4", wrapped2, wrapped3)
+	wrapped4 := wrap.Errors([]error{wrapped2, wrapped3}, "wrapped 4")
 
 	expected := `wrapped 4
 - wrapped 2
@@ -166,7 +163,10 @@ func TestErrorsIs(t *testing.T) {
 	}
 
 	otherErr := errors.New("some other error")
-	wrapped2 := wrap.Errors("failed to find file, and got other error", otherErr, fs.ErrNotExist)
+	wrapped2 := wrap.Errors(
+		[]error{otherErr, fs.ErrNotExist},
+		"failed to find file, and got other error",
+	)
 	if !errors.Is(wrapped2, fs.ErrNotExist) {
 		t.Error("expected errors.Is to return true for wrapped errors")
 	}
