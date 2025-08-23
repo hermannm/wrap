@@ -300,8 +300,8 @@ func (err wrappedError) Unwrap() error {
 	return err.wrapped
 }
 
-// WrappingMessage implements [hermannm.dev/devlog/log.hasWrappingMessage] for log message
-// formatting.
+// WrappingMessage implements [hermannm.dev/devlog/log.hasWrappingMessage] to support structured
+// error logging.
 //
 // [hermannm.dev/devlog/log.hasWrappingMessage]: https://github.com/hermannm/devlog/blob/v0.6.0/log/errors.go
 func (err wrappedError) WrappingMessage() string {
@@ -322,8 +322,8 @@ func (err wrappedErrors) Unwrap() []error {
 	return err.wrapped
 }
 
-// WrappingMessage implements [hermannm.dev/devlog/log.hasWrappingMessage] for log message
-// formatting.
+// WrappingMessage implements [hermannm.dev/devlog/log.hasWrappingMessage] to support structured
+// error logging.
 //
 // [hermannm.dev/devlog/log.hasWrappingMessage]: https://github.com/hermannm/devlog/blob/v0.6.0/log/errors.go
 func (err wrappedErrors) WrappingMessage() string {
@@ -345,13 +345,18 @@ func (err wrappedErrorWithAttrs) Unwrap() error {
 	return err.wrapped
 }
 
-// WrappingMessage implements [hermannm.dev/devlog/log.wrappedError] for log message formatting.
+// WrappingMessage implements [hermannm.dev/devlog/log.hasWrappingMessage] to support structured
+// error logging.
 //
-// [hermannm.dev/devlog/log.wrappedError]: https://github.com/hermannm/devlog/blob/v0.6.0/log/errors.go#L7-L13
+// [hermannm.dev/devlog/log.hasWrappingMessage]: https://github.com/hermannm/devlog/blob/v0.6.0/log/errors.go
 func (err wrappedErrorWithAttrs) WrappingMessage() string {
 	return err.message
 }
 
+// LogAttrs implements [hermannm.dev/devlog/log.hasLogAttributes] to attach structured logging
+// context to errors.
+//
+// [hermannm.dev/devlog/log.hasLogAttributes]: https://github.com/hermannm/devlog/blob/v0.6.0/log/errors.go
 func (err wrappedErrorWithAttrs) LogAttrs() []slog.Attr {
 	return err.attrs
 }
@@ -371,13 +376,18 @@ func (err wrappedErrorsWithAttrs) Unwrap() []error {
 	return err.wrapped
 }
 
-// WrappingMessage implements [hermannm.dev/devlog/log.wrappedErrors] for log message formatting.
+// WrappingMessage implements [hermannm.dev/devlog/log.hasWrappingMessage] to support structured
+// error logging.
 //
-// [hermannm.dev/devlog/log.wrappedErrors]: https://github.com/hermannm/devlog/blob/v0.6.0/log/errors.go#L15-L21
+// [hermannm.dev/devlog/log.hasWrappingMessage]: https://github.com/hermannm/devlog/blob/v0.6.0/log/errors.go
 func (err wrappedErrorsWithAttrs) WrappingMessage() string {
 	return err.message
 }
 
+// LogAttrs implements [hermannm.dev/devlog/log.hasLogAttributes] to attach structured logging
+// context to errors.
+//
+// [hermannm.dev/devlog/log.hasLogAttributes]: https://github.com/hermannm/devlog/blob/v0.6.0/log/errors.go
 func (err wrappedErrorsWithAttrs) LogAttrs() []slog.Attr {
 	return err.attrs
 }
@@ -391,6 +401,10 @@ func (err errorWithAttrs) Error() string {
 	return err.message
 }
 
+// LogAttrs implements [hermannm.dev/devlog/log.hasLogAttributes] to attach structured logging
+// context to errors.
+//
+// [hermannm.dev/devlog/log.hasLogAttributes]: https://github.com/hermannm/devlog/blob/v0.6.0/log/errors.go
 func (err errorWithAttrs) LogAttrs() []slog.Attr {
 	return err.attrs
 }
