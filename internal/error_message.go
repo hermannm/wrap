@@ -120,66 +120,67 @@ func (builder *errorBuilder) writeIndent(indent int) {
 // around the wrapped error. Otherwise, the returned errMessage is the full error message of the
 // given err.
 //
-// Same implementation as the [hermannm.dev/devlog/log] library uses for structuring error logs.
+// Same implementation that the [hermannm.dev/devlog/log] library uses for structuring error logs.
 //
 // [hermannm.dev/devlog/log]: https://github.com/hermannm/devlog/blob/v0.6.0/log/errors.go
 func unwrapError(err wrappingError) (
-	wrapped error,
+	unwrapped error,
 	errMessage string,
 	errMessageIsWrappingMessage bool,
 ) {
-	wrapped = err.Unwrap()
+	unwrapped = err.Unwrap()
 
 	// If err has a WrappingMessage() string method, we use that as the wrapping message
 	if wrapper, ok := err.(hasWrappingMessage); ok {
-		return wrapped, wrapper.WrappingMessage(), true
+		return unwrapped, wrapper.WrappingMessage(), true
 	}
 
 	errMessage = err.Error()
-	if wrapped == nil {
+	if unwrapped == nil {
 		return nil, errMessage, false
 	}
 
 	// If err did not implement WrappingMessage(), we look for a common pattern for wrapping errors:
-	//	fmt.Errorf("wrapping message: %w", wrapped)
-	// If the full error message ends in the wrapped error message, with a ": " separator, we can
-	// get the wrapping message before the separator.
-	wrappedMessage := wrapped.Error()
+	//	fmt.Errorf("wrapping message: %w", unwrapped)
+	// If the full error message is suffixed by the unwrapped error message, with a ": " separator,
+	// we can get the wrapping message before the separator.
+	unwrappedMessage := unwrapped.Error()
 
-	// -2 for ": " separator between wrapping message and wrapped error
-	wrappingMessageEndIndex := len(errMessage) - len(wrappedMessage) - 2
+	// -2 for ": " separator between wrapping message and unwrapped error
+	wrappingMessageEndIndex := len(errMessage) - len(unwrappedMessage) - 2
 
 	if wrappingMessageEndIndex > 0 &&
-		strings.HasSuffix(errMessage, wrappedMessage) &&
+		strings.HasSuffix(errMessage, unwrappedMessage) &&
 		errMessage[wrappingMessageEndIndex] == ':' {
 		// Check for either space or newline in character after colon
 		charAfterColon := errMessage[wrappingMessageEndIndex+1]
+
 		if charAfterColon == ' ' || charAfterColon == '\n' {
 			wrappingMessage := errMessage[0:wrappingMessageEndIndex]
-			return wrapped, wrappingMessage, true
+			return unwrapped, wrappingMessage, true
 		}
 	}
 
-	return wrapped, errMessage, false
+	return unwrapped, errMessage, false
 }
 
 // If errMessageIsWrappingMessage is true, then the returned errMessage is the wrapping message
 // around the wrapped errors. Otherwise, the returned errMessage is the full error message of the
 // given err.
 //
-// Same implementation as the [hermannm.dev/devlog/log] library uses for structuring error logs.
+// Same implementation that the [hermannm.dev/devlog/log] library uses for structuring error logs.
 //
 // [hermannm.dev/devlog/log]: https://github.com/hermannm/devlog/blob/v0.6.0/log/errors.go
 func unwrapErrors(err wrappingErrors) (
-	wrapped []error,
+	unwrapped []error,
 	errMessage string,
 	errMessageIsWrappingMessage bool,
 ) {
-	wrapped = err.Unwrap()
+	unwrapped = err.Unwrap()
 
 	if wrapper, ok := err.(hasWrappingMessage); ok {
-		return wrapped, wrapper.WrappingMessage(), true
+		return unwrapped, wrapper.WrappingMessage(), true
 	} else {
-		return wrapped, err.Error(), false
+		return unwrapped, err.Error(), false
 	}
 }
