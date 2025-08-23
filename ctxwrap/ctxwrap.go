@@ -268,12 +268,39 @@ func Errors(ctx context.Context, wrapped []error, message string) error {
 	return wrappedErrors{ctx, wrapped, message}
 }
 
+// Errorsf wraps the given errors with a formatted message, to add context to the error. It forwards
+// the given message format and args to [fmt.Sprintf] to construct the message.
+//
+// It takes a [context.Context] parameter, to preserve the error's context when it's returned up
+// the stack (see the [ctxwrap] package docs for more on this). If you're in a function without
+// a context parameter, you can use [hermannm.dev/wrap.Errorsf] instead.
+//
+// The returned error implements the Unwrap method from the standard errors package, so it works
+// with [errors.Is] and [errors.As].
+//
+// # Error string format
+//
+// The following example:
+//
+//	errs := []error{errors.New("username already taken"), errors.New("invalid email")}
+//	wrapped := ctxwrap.Errorsf(ctx, errs, "failed to create user with name '%s'", "hermannm")
+//	fmt.Println(wrapped)
+//
+// ...produces this error string:
+//
+//	failed to create user with name 'hermannm'
+//	- username already taken
+//	- invalid email
+func Errorsf(ctx context.Context, wrapped []error, messageFormat string, formatArgs ...any) error {
+	return wrappedErrors{ctx, wrapped, fmt.Sprintf(messageFormat, formatArgs...)}
+}
+
 // ErrorsWithAttrs wraps the given errors with a message and log attributes, to add structured
 // context to the error when it is logged (see below for how to pass attributes).
 //
 // It takes a [context.Context] parameter, to preserve the error's context when it's returned up
 // the stack (see the [ctxwrap] package docs for more on this). If you're in a function without
-// a context parameter, you can use [hermannm.dev/wrap.Error] instead.
+// a context parameter, you can use [hermannm.dev/wrap.ErrorsWithAttrs] instead.
 //
 // The returned error implements the following method:
 //
@@ -343,7 +370,7 @@ func ErrorsWithAttrs(
 //
 // It takes a [context.Context] parameter, to preserve the error's context when it's returned up
 // the stack (see the [ctxwrap] package docs for more on this). If you're in a function without
-// a context parameter, you can use [hermannm.dev/wrap.ErrorWithAttrs] instead.
+// a context parameter, you can use [hermannm.dev/wrap.NewErrorWithAttrs] instead.
 //
 // The returned error implements the following method:
 //

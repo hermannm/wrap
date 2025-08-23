@@ -40,6 +40,17 @@ func TestErrors(t *testing.T) {
 	assertEqualErrorStrings(t, wrapped, expected)
 }
 
+func TestErrorsf(t *testing.T) {
+	errs := []error{errors.New("username already taken"), errors.New("invalid email")}
+	wrapped := wrap.Errorsf(errs, "failed to create user with name '%s'", "hermannm")
+
+	expected := `failed to create user with name 'hermannm'
+- username already taken
+- invalid email`
+
+	assertEqualErrorStrings(t, wrapped, expected)
+}
+
 func TestNestedError(t *testing.T) {
 	err := errors.New("error")
 	inner := wrap.Error(err, "inner wrapped error")

@@ -179,6 +179,33 @@ func Errors(wrapped []error, message string) error {
 	return wrappedErrors{wrapped, message}
 }
 
+// Errorsf wraps the given errors with a formatted message, to add context to the error. It forwards
+// the given message format and args to [fmt.Sprintf] to construct the message.
+//
+// If you're in a function with a [context.Context] parameter, consider using
+// [hermannm.dev/wrap/ctxwrap.Errorsf] instead. See the [hermannm.dev/wrap/ctxwrap] package docs for
+// why you may want to do this.
+//
+// The returned error implements the Unwrap method from the standard errors package, so it works
+// with [errors.Is] and [errors.As].
+//
+// # Error string format
+//
+// The following example:
+//
+//	errs := []error{errors.New("username already taken"), errors.New("invalid email")}
+//	wrapped := wrap.Errorsf(errs, "failed to create user with name '%s'", "hermannm")
+//	fmt.Println(wrapped)
+//
+// ...produces this error string:
+//
+//	failed to create user with name 'hermannm'
+//	- username already taken
+//	- invalid email
+func Errorsf(wrapped []error, messageFormat string, formatArgs ...any) error {
+	return wrappedErrors{wrapped, fmt.Sprintf(messageFormat, formatArgs...)}
+}
+
 // ErrorsWithAttrs wraps the given errors with a message and log attributes, to add structured
 // context to the error when it is logged (see below for how to pass attributes).
 //
