@@ -190,6 +190,7 @@ func TestErrorsAs(t *testing.T) {
 		t.Error("expected errors.As to return true for wrapped error")
 	}
 
+	//goland:noinspection GoDirectComparisonOfErrors - We want to test errors.As here, not errors.Is
 	if pathErr != originalErr {
 		t.Errorf(
 			"expected error gotten from errors.As to equal original wrapped error; got %+v, want %+v",
