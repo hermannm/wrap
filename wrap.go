@@ -4,90 +4,124 @@ package wrap
 
 import (
 	"fmt"
-	"strings"
+
+	"hermannm.dev/wrap/internal"
 )
 
-// Error wraps the given error with a message for context.
+// Error wraps the given error with a message, to add context to the error.
 //
-// The error is displayed on the following format:
+// If you're in a function with a [context.Context] parameter, consider using
+// [hermannm.dev/wrap/ctxwrap.Error] instead. See the [hermannm.dev/wrap/ctxwrap] package docs for
+// why you may want to do this.
+//
+// The returned error implements the Unwrap method from the standard [errors] package, so it works
+// with [errors.Is] and [errors.As].
+//
+// # Error string format
+//
+// The following example:
 //
 //	err := errors.New("expired token")
 //	wrapped := wrap.Error(err, "user authentication failed")
 //	fmt.Println(wrapped)
-//	// user authentication failed
-//	// - expired token
 //
-// Wrapped errors can be nested. Wrapping an already wrapped error adds it to the error list, as
-// follows:
+// ...produces this error string:
+//
+//	user authentication failed
+//	- expired token
+//
+// Wrapped errors can be nested. Wrapping an already wrapped error adds it to the error list, so
+// this next example:
 //
 //	err := errors.New("expired token")
 //	inner := wrap.Error(err, "user authentication failed")
 //	outer := wrap.Error(inner, "failed to update username")
 //	fmt.Println(outer)
-//	// failed to update username
-//	// - user authentication failed
-//	// - expired token
 //
-// The returned error implements the Unwrap method from the standard errors package, so it works
-// with [errors.Is] and [errors.As].
+// ...produces this error string:
+//
+//	failed to update username
+//	- user authentication failed
+//	- expired token
 func Error(wrapped error, message string) error {
-	return wrappedError{wrapped: wrapped, message: message}
+	return wrappedError{wrapped, message}
 }
 
-// Errorf wraps the given error with a message for context. It forwards the given message format and
-// args to [fmt.Sprintf] to construct the message.
+// Errorf wraps the given error with a formatted message, to add context to the error. It forwards
+// the given message format and args to [fmt.Sprintf] to construct the message.
 //
-// Example:
+// If you're in a function with a [context.Context] parameter, consider using
+// [hermannm.dev/wrap/ctxwrap.Errorf] instead. See the [hermannm.dev/wrap/ctxwrap] package docs for
+// why you may want to do this.
+//
+// The returned error implements the Unwrap method from the standard [errors] package, so it works
+// with [errors.Is] and [errors.As].
+//
+// # Error string format
+//
+// The following example:
 //
 //	err := errors.New("username already taken")
 //	wrapped := wrap.Errorf(err, "failed to create user with name '%s'", "hermannm")
 //	fmt.Println(wrapped)
-//	// failed to create user with name 'hermannm'
-//	// - username already taken
+//
+// ...produces this error string:
+//
+//	failed to create user with name 'hermannm'
+//	- username already taken
 func Errorf(wrapped error, messageFormat string, formatArgs ...any) error {
-	return Error(wrapped, fmt.Sprintf(messageFormat, formatArgs...))
+	return wrappedError{wrapped, fmt.Sprintf(messageFormat, formatArgs...)}
 }
 
-// Errors wraps the given errors with a message for context.
+// Errors wraps the given errors with a message, to add context to the errors.
 //
-// The error is displayed on the following format:
+// If you're in a function with a [context.Context] parameter, consider using
+// [hermannm.dev/wrap/ctxwrap.Errors] instead. See the [hermannm.dev/wrap/ctxwrap] package docs for
+// why you may want to do this.
+//
+// The returned error implements the Unwrap method from the standard errors package, so it works
+// with [errors.Is] and [errors.As].
+//
+// # Error string format
+//
+// The following example:
 //
 //	err1 := errors.New("username too long")
 //	err2 := errors.New("invalid email")
 //	wrapped := wrap.Errors("user creation failed", err1, err2)
 //	fmt.Println(wrapped)
-//	// user creation failed
-//	// - username too long
-//	// - invalid email
 //
-// When combined with [Error], nested wrapped errors are indented as follows:
+// ...produces this error string:
+//
+//	user creation failed
+//	- username too long
+//	- invalid email
+//
+// When combined with [wrap.Error], nested wrapped errors are indented, so this next example:
 //
 //	err1 := errors.New("username too long")
 //	err2 := errors.New("invalid email")
 //	inner := wrap.Errors("user creation failed", err1, err2)
 //	outer := wrap.Error(inner, "failed to register new user")
 //	fmt.Println(outer)
-//	// failed to register new user
-//	// - user creation failed
-//	//   - username too long
-//	//   - invalid email
 //
-// The returned error implements the Unwrap method from the standard errors package, so it works
-// with [errors.Is] and [errors.As].
+// ...produces this error string:
+//
+//	failed to register new user
+//	- user creation failed
+//	  - username too long
+//	  - invalid email
 func Errors(message string, wrapped ...error) error {
-	return wrappedErrors{message: message, wrapped: wrapped}
+	return wrappedErrors{wrapped, message}
 }
 
 type wrappedError struct {
-	message string
 	wrapped error
+	message string
 }
 
 func (err wrappedError) Error() string {
-	var builder errorBuilder
-	builder.WriteString(err.message)
-	builder.writeErrorListItem(err.wrapped, 1, false)
-	return builder.String()
+	return internal.BuildWrappedErrorString(err)
 }
 
 // Unwrap matches the signature for wrapped errors expected by the [errors] package.
@@ -95,21 +129,21 @@ func (err wrappedError) Unwrap() error {
 	return err.wrapped
 }
 
-// WrappingMessage implements [hermannm.dev/devlog/log.WrappedError] for log message formatting.
+// WrappingMessage implements [hermannm.dev/devlog/log.hasWrappingMessage] for log message
+// formatting.
+//
+// [hermannm.dev/devlog/log.hasWrappingMessage]: https://github.com/hermannm/devlog/blob/v0.6.0/log/errors.go
 func (err wrappedError) WrappingMessage() string {
 	return err.message
 }
 
 type wrappedErrors struct {
-	message string
 	wrapped []error
+	message string
 }
 
 func (err wrappedErrors) Error() string {
-	var builder errorBuilder
-	builder.WriteString(err.message)
-	builder.writeErrorList(err.wrapped, 1)
-	return builder.String()
+	return internal.BuildWrappedErrorsString(err)
 }
 
 // Unwrap matches the signature for wrapped errors expected by the [errors] package.
@@ -117,134 +151,10 @@ func (err wrappedErrors) Unwrap() []error {
 	return err.wrapped
 }
 
-// WrappingMessage implements [hermannm.dev/devlog/log.WrappedError] for log message formatting.
+// WrappingMessage implements [hermannm.dev/devlog/log.hasWrappingMessage] for log message
+// formatting.
+//
+// [hermannm.dev/devlog/log.hasWrappingMessage]: https://github.com/hermannm/devlog/blob/v0.6.0/log/errors.go
 func (err wrappedErrors) WrappingMessage() string {
 	return err.message
-}
-
-type errorBuilder struct {
-	strings.Builder
-}
-
-func (builder *errorBuilder) writeErrorListItem(wrappedErr error, indent int, partOfList bool) {
-	builder.writeListItemPrefix(indent)
-
-	switch err := wrappedErr.(type) {
-	case wrappedError:
-		builder.writeErrorMessage([]byte(err.message), indent)
-		if partOfList {
-			indent++
-		}
-		builder.writeErrorListItem(err.wrapped, indent, false)
-	case wrappedErrors:
-		builder.writeErrorMessage([]byte(err.message), indent)
-		if partOfList || len(err.wrapped) > 1 {
-			indent++
-		}
-		builder.writeErrorList(err.wrapped, indent)
-	default:
-		builder.writeExternalErrorMessage([]byte(err.Error()), indent, partOfList)
-	}
-}
-
-func (builder *errorBuilder) writeErrorList(wrappedErrs []error, indent int) {
-	for _, wrappedErr := range wrappedErrs {
-		builder.writeErrorListItem(wrappedErr, indent, len(wrappedErrs) > 1)
-	}
-}
-
-// Splits error messages longer than 64 characters at ": " (typically used for error wrapping), if
-// present. Ensures that no splits are shorter than 16 characters (except the last one).
-func (builder *errorBuilder) writeExternalErrorMessage(
-	message []byte,
-	indent int,
-	partOfList bool,
-) {
-	const minSplitLength = 16
-	const maxSplitLength = 64
-
-	if len(message) <= maxSplitLength {
-		builder.writeErrorMessage(message, indent)
-		return
-	}
-
-	lastWriteIndex := 0
-
-MessageLoop:
-	for i := 0; i < len(message)-1; i++ {
-		switch message[i] {
-		case ':':
-			// Safe to index [i+1], since we loop until the second-to-last index
-			switch message[i+1] {
-			case ' ', '\n':
-				if i-lastWriteIndex < minSplitLength {
-					continue MessageLoop
-				}
-
-				// First split
-				if lastWriteIndex == 0 {
-					if partOfList {
-						indent++
-					}
-				} else {
-					builder.writeListItemPrefix(indent)
-				}
-
-				builder.Write(message[lastWriteIndex:i])
-
-				lastWriteIndex = i + 2 // +2 for ': '
-				if len(message)-lastWriteIndex <= maxSplitLength {
-					break MessageLoop // Remaining message is short enough, we're done
-				}
-
-				i++ // Skips next character, since we already looked at it
-			}
-		case '\n':
-			// Once we hit a newline (not preceded by ':'), we only indent the remainder of the
-			// message
-			if lastWriteIndex != 0 {
-				builder.writeListItemPrefix(indent)
-			}
-			builder.Write(message[lastWriteIndex : i+1])
-			builder.writeIndent(indent + 1)
-			builder.writeErrorMessage(message[i+1:], indent)
-			return
-		}
-	}
-
-	if lastWriteIndex == 0 {
-		builder.writeErrorMessage(message, indent)
-		return
-	}
-
-	// Writes remainder after last split
-	builder.writeListItemPrefix(indent)
-	builder.writeErrorMessage(message[lastWriteIndex:], indent)
-}
-
-func (builder *errorBuilder) writeErrorMessage(message []byte, indent int) {
-	indent++ // Since indent is made for list bullet points, we want to indent one level deeper
-
-	lastWriteIndex := 0
-	for i := 0; i < len(message)-1; i++ {
-		if message[i] == '\n' {
-			builder.Write(message[lastWriteIndex : i+1])
-			builder.writeIndent(indent)
-			lastWriteIndex = i + 1
-		}
-	}
-
-	builder.Write(message[lastWriteIndex:])
-}
-
-func (builder *errorBuilder) writeListItemPrefix(indent int) {
-	builder.WriteByte('\n')
-	builder.writeIndent(indent)
-	builder.WriteString("- ")
-}
-
-func (builder *errorBuilder) writeIndent(indent int) {
-	for i := 1; i < indent; i++ {
-		builder.WriteString("  ")
-	}
 }

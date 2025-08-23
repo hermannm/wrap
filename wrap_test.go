@@ -2,6 +2,7 @@ package wrap_test
 
 import (
 	"errors"
+	"fmt"
 	"io/fs"
 	"testing"
 
@@ -79,12 +80,20 @@ func TestNestedErrors(t *testing.T) {
 }
 
 func TestMultilineError(t *testing.T) {
-	err1 := errors.New(`multiline
-error 1`)
-	err2 := errors.New(`multiline
-error 2`)
-	inner := wrap.Errors(`wrapped multiline
-errors`, err1, err2)
+	err1 := errors.New(
+		`multiline
+error 1`,
+	)
+	err2 := errors.New(
+		`multiline
+error 2`,
+	)
+	inner := wrap.Errors(
+		`wrapped multiline
+errors`,
+		err1,
+		err2,
+	)
 	outer := wrap.Error(inner, "outer wrapped error")
 
 	expected := `outer wrapped error
@@ -118,66 +127,34 @@ func TestSingleWrappedErrors(t *testing.T) {
 	assertEqualErrorStrings(t, wrapped4, expected)
 }
 
-func TestLongErrorMessage(t *testing.T) {
-	err := errors.New(
-		"this error message is more than 16 characters: " +
-			"less than 16: " +
-			"now again longer than 16 characters: " +
-			"this is a long error message, of barely less than 64 characters: " +
-			"short message",
-	)
-	wrapped := wrap.Error(err, "wrapped error")
+func TestErrorWrappedWithFmt(t *testing.T) {
+	err1 := errors.New("the underlying error")
+	err2 := fmt.Errorf("something went wrong: %w", err1)
+	err3 := fmt.Errorf("error string with : in the middle: %w", err2)
+	err4 := fmt.Errorf("an error occurred: %w", err3)
+	wrapped := wrap.Error(err4, "wrapped error")
 
 	expected := `wrapped error
-- this error message is more than 16 characters
-- less than 16: now again longer than 16 characters
-- this is a long error message, of barely less than 64 characters
-- short message`
+- an error occurred
+- error string with : in the middle
+- something went wrong
+- the underlying error`
 
 	assertEqualErrorStrings(t, wrapped, expected)
 }
 
-func TestLongErrorMessageInList(t *testing.T) {
+func TestMultilineErrorWrappedWithFmt(t *testing.T) {
 	err1 := errors.New(
-		"this is a long error message, of barely less than 64 characters: " +
-			"this error message is more than 16 characters: " +
-			"and another one longer than 16 characters",
+		`error with
+newline`,
 	)
-	err2 := errors.New("other error")
-	wrapped := wrap.Errors("wrapped error", err1, err2)
+	err2 := fmt.Errorf("context with newline:\n%w", err1)
+	wrapped := wrap.Error(err2, "wrapped error")
 
 	expected := `wrapped error
-- this is a long error message, of barely less than 64 characters
-  - this error message is more than 16 characters
-  - and another one longer than 16 characters
-- other error`
-
-	assertEqualErrorStrings(t, wrapped, expected)
-}
-
-func TestLongMultilineErrorMessage(t *testing.T) {
-	err := errors.New(`this error message ends in a newline and colon:
-more than 16 characters: this message ends in a newline
-another message ending in a newline and colon:
-another newline message`)
-	wrapped := wrap.Error(err, "wrapped error")
-
-	expected := `wrapped error
-- this error message ends in a newline and colon
-- more than 16 characters
-- this message ends in a newline
-  another message ending in a newline and colon:
-  another newline message`
-
-	assertEqualErrorStrings(t, wrapped, expected)
-}
-
-func TestUnsplittableErrorMessage(t *testing.T) {
-	err := errors.New("this is a super long error message of more than 64 characters in total")
-	wrapped := wrap.Error(err, "wrapped error")
-
-	expected := `wrapped error
-- this is a super long error message of more than 64 characters in total`
+- context with newline
+- error with
+  newline`
 
 	assertEqualErrorStrings(t, wrapped, expected)
 }
@@ -224,7 +201,8 @@ func TestErrorsAs(t *testing.T) {
 
 func assertEqualErrorStrings(t *testing.T, errToTest error, expected string) {
 	if actual := errToTest.Error(); actual != expected {
-		t.Errorf(`unexpected error string
+		t.Errorf(
+			`unexpected error string
 got:
 ----------------------------------------
 %s
@@ -234,6 +212,7 @@ want:
 ----------------------------------------
 %s
 ----------------------------------------
-`, actual, expected)
+`, actual, expected,
+		)
 	}
 }
