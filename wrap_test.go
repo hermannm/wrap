@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"log/slog"
+	"reflect"
 	"testing"
 
 	"hermannm.dev/wrap"
@@ -16,7 +18,7 @@ func TestError(t *testing.T) {
 	expected := `wrapped error
 - error`
 
-	assertEqualErrorStrings(t, wrapped, expected)
+	assertErrorString(t, wrapped, expected)
 }
 
 func TestErrorf(t *testing.T) {
@@ -26,7 +28,18 @@ func TestErrorf(t *testing.T) {
 	expected := `failed to create user with name 'hermannm'
 - username already taken`
 
-	assertEqualErrorStrings(t, wrapped, expected)
+	assertErrorString(t, wrapped, expected)
+}
+
+func TestErrorWithAttrs(t *testing.T) {
+	err := errors.New("error")
+	wrapped := wrap.ErrorWithAttrs(err, "wrapped error", "key1", "value1", slog.Int("key2", 2))
+
+	expected := `wrapped error
+- error`
+
+	assertErrorString(t, wrapped, expected)
+	assertLogAttrs(t, wrapped, slog.String("key1", "value1"), slog.Int("key2", 2))
 }
 
 func TestErrors(t *testing.T) {
@@ -37,7 +50,19 @@ func TestErrors(t *testing.T) {
 - username too long
 - invalid email`
 
-	assertEqualErrorStrings(t, wrapped, expected)
+	assertErrorString(t, wrapped, expected)
+}
+
+func TestErrorsWithAttrs(t *testing.T) {
+	errs := []error{errors.New("error 1"), errors.New("error 2")}
+	wrapped := wrap.ErrorsWithAttrs(errs, "wrapped errors", "key1", "value1", slog.Int("key2", 2))
+
+	expected := `wrapped errors
+- error 1
+- error 2`
+
+	assertErrorString(t, wrapped, expected)
+	assertLogAttrs(t, wrapped, slog.String("key1", "value1"), slog.Int("key2", 2))
 }
 
 func TestErrorsf(t *testing.T) {
@@ -48,7 +73,14 @@ func TestErrorsf(t *testing.T) {
 - username already taken
 - invalid email`
 
-	assertEqualErrorStrings(t, wrapped, expected)
+	assertErrorString(t, wrapped, expected)
+}
+
+func TestNewErrorWithAttrs(t *testing.T) {
+	err := wrap.NewErrorWithAttrs("error message", "key1", "value1", slog.Int("key2", 2))
+
+	assertErrorString(t, err, "error message")
+	assertLogAttrs(t, err, slog.String("key1", "value1"), slog.Int("key2", 2))
 }
 
 func TestNestedError(t *testing.T) {
@@ -60,7 +92,7 @@ func TestNestedError(t *testing.T) {
 - inner wrapped error
 - error`
 
-	assertEqualErrorStrings(t, outer, expected)
+	assertErrorString(t, outer, expected)
 }
 
 func TestNestedErrors(t *testing.T) {
@@ -85,7 +117,7 @@ func TestNestedErrors(t *testing.T) {
     - error 3
     - error 4`
 
-	assertEqualErrorStrings(t, outer, expected)
+	assertErrorString(t, outer, expected)
 }
 
 func TestMultilineError(t *testing.T) {
@@ -112,7 +144,7 @@ errors`,
   - multiline
     error 2`
 
-	assertEqualErrorStrings(t, outer, expected)
+	assertErrorString(t, outer, expected)
 }
 
 func TestSingleWrappedErrors(t *testing.T) {
@@ -132,7 +164,7 @@ func TestSingleWrappedErrors(t *testing.T) {
 - wrapped 3
   - error 2`
 
-	assertEqualErrorStrings(t, wrapped4, expected)
+	assertErrorString(t, wrapped4, expected)
 }
 
 func TestErrorWrappedWithFmt(t *testing.T) {
@@ -148,7 +180,7 @@ func TestErrorWrappedWithFmt(t *testing.T) {
 - something went wrong
 - the underlying error`
 
-	assertEqualErrorStrings(t, wrapped, expected)
+	assertErrorString(t, wrapped, expected)
 }
 
 func TestMultilineErrorWrappedWithFmt(t *testing.T) {
@@ -164,7 +196,7 @@ newline`,
 - error with
   newline`
 
-	assertEqualErrorStrings(t, wrapped, expected)
+	assertErrorString(t, wrapped, expected)
 }
 
 func TestErrorsIs(t *testing.T) {
@@ -211,20 +243,39 @@ func TestErrorsAs(t *testing.T) {
 	}
 }
 
-func assertEqualErrorStrings(t *testing.T, errToTest error, expected string) {
+func assertErrorString(t *testing.T, errToTest error, expected string) {
 	if actual := errToTest.Error(); actual != expected {
 		t.Errorf(
-			`unexpected error string
-got:
+			`Unexpected error string
+Want:
 ----------------------------------------
 %s
 ----------------------------------------
+Got:
+----------------------------------------
+%s
+----------------------------------------
+`,
+			expected,
+			actual,
+		)
+	}
+}
 
-want:
-----------------------------------------
-%s
-----------------------------------------
-`, actual, expected,
+func assertLogAttrs(t *testing.T, err error, expected ...slog.Attr) {
+	errWithAttrs, ok := err.(interface{ LogAttrs() []slog.Attr })
+	if !ok {
+		t.Fatalf("Expected error to implement LogAttrs() []slog.Attr")
+	}
+
+	actual := errWithAttrs.LogAttrs()
+	if !reflect.DeepEqual(expected, actual) {
+		t.Errorf(
+			`Unexpected log attributes
+Want: %v
+Got: %v`,
+			expected,
+			actual,
 		)
 	}
 }
