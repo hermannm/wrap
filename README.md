@@ -156,7 +156,8 @@ func parentFunction(ctx context.Context) {
 }
 
 func childFunction(ctx context.Context) error {
-	// log.AddContextAttrs adds log attributes to the context, to be attached when ctx is logged
+	// log.AddContextAttrs adds log attributes to the context.
+    // When ctx is logged, these attributes are included in the log output
 	ctx = log.AddContextAttrs(ctx, "key", "value")
 
 	if err := someFallibleOperation(ctx); err != nil {
