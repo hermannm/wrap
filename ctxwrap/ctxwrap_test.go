@@ -99,6 +99,20 @@ func TestErrorsf(t *testing.T) {
 	assertContext(t, wrapped)
 }
 
+func TestNewError(t *testing.T) {
+	err := ctxwrap.NewError(ctx, "error message")
+
+	assertErrorString(t, err, "error message")
+	assertContext(t, err)
+}
+
+func TestNewErrorf(t *testing.T) {
+	err := ctxwrap.NewErrorf(ctx, "failed to create user with name '%s'", "hermannm")
+
+	assertErrorString(t, err, "failed to create user with name 'hermannm'")
+	assertContext(t, err)
+}
+
 func TestNewErrorWithAttrs(t *testing.T) {
 	err := ctxwrap.NewErrorWithAttrs(ctx, "error message", "key1", "value1", slog.Int("key2", 2))
 

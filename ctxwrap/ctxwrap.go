@@ -365,6 +365,22 @@ func ErrorsWithAttrs(
 	return wrappedErrorsWithAttrs{ctx, wrapped, message, internal.ParseAttrs(logAttributes)}
 }
 
+// NewError returns a new error with the given message. It takes a [context.Context] parameter, to
+// preserve the error's context when it's returned up the stack (see the [ctxwrap] package docs for
+// more on this). If you're in a function without a context parameter, you can use [errors.New]
+// instead.
+func NewError(ctx context.Context, message string) error {
+	return errorWithContext{ctx, message}
+}
+
+// NewErrorf returns a new error with the given message. It takes a [context.Context] parameter, to
+// preserve the error's context when it's returned up the stack (see the [ctxwrap] package docs for
+// more on this). If you're in a function without a context parameter, you can use [fmt.Errorf]
+// instead.
+func NewErrorf(ctx context.Context, messageFormat string, formatArgs ...any) error {
+	return errorWithContext{ctx, fmt.Sprintf(messageFormat, formatArgs...)}
+}
+
 // NewErrorWithAttrs returns a new error with the given message, and logging attributes to add
 // structured context to the error when it is logged (see below for how to pass attributes).
 //
@@ -552,6 +568,26 @@ func (err wrappedErrorsWithAttrs) LogAttrs() []slog.Attr {
 //
 // [hermannm.dev/devlog/log.hasContext]: https://github.com/hermannm/devlog/blob/v0.6.0/log/errors.go
 func (err wrappedErrorsWithAttrs) Context() context.Context {
+	return err.ctx
+}
+
+type errorWithContext struct {
+	ctx     context.Context
+	message string
+}
+
+func (err errorWithContext) Error() string {
+	return err.message
+}
+
+// Context returns the original [context.Context] in which the error was created. See the [ctxwrap]
+// package docs for the motivation behind this.
+//
+// This implements the [hermannm.dev/devlog/log.hasContext] interface, which is used in that library
+// to attach error context attributes to the log.
+//
+// [hermannm.dev/devlog/log.hasContext]: https://github.com/hermannm/devlog/blob/v0.6.0/log/errors.go
+func (err errorWithContext) Context() context.Context {
 	return err.ctx
 }
 
