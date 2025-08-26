@@ -26,11 +26,11 @@ func TestError(t *testing.T) {
 }
 
 func TestErrorf(t *testing.T) {
-	err := errors.New("username already taken")
-	wrapped := ctxwrap.Errorf(ctx, err, "failed to create user with name '%s'", "hermannm")
+	err := errors.New("unrecognized event type")
+	wrapped := ctxwrap.Errorf(ctx, err, "failed to process event of type '%s'", "ORDER_UPDATED")
 
-	expected := `failed to create user with name 'hermannm'
-- username already taken`
+	expected := `failed to process event of type 'ORDER_UPDATED'
+- unrecognized event type`
 
 	assertErrorString(t, wrapped, expected)
 	assertContext(t, wrapped)
@@ -56,12 +56,12 @@ func TestErrorWithAttrs(t *testing.T) {
 }
 
 func TestErrors(t *testing.T) {
-	errs := []error{errors.New("username too long"), errors.New("invalid email")}
-	wrapped := ctxwrap.Errors(ctx, errs, "user creation failed")
+	errs := []error{errors.New("invalid timestamp format"), errors.New("id was not UUID")}
+	wrapped := ctxwrap.Errors(ctx, errs, "failed to parse event")
 
-	expected := `user creation failed
-- username too long
-- invalid email`
+	expected := `failed to parse event
+- invalid timestamp format
+- id was not UUID`
 
 	assertErrorString(t, wrapped, expected)
 	assertContext(t, wrapped)
@@ -88,12 +88,12 @@ func TestErrorsWithAttrs(t *testing.T) {
 }
 
 func TestErrorsf(t *testing.T) {
-	errs := []error{errors.New("username already taken"), errors.New("invalid email")}
-	wrapped := ctxwrap.Errorsf(ctx, errs, "failed to create user with name '%s'", "hermannm")
+	errs := []error{errors.New("invalid timestamp format"), errors.New("id was not UUID")}
+	wrapped := ctxwrap.Errorsf(ctx, errs, "failed to parse event of type '%s'", "ORDER_UPDATED")
 
-	expected := `failed to create user with name 'hermannm'
-- username already taken
-- invalid email`
+	expected := `failed to parse event of type 'ORDER_UPDATED'
+- invalid timestamp format
+- id was not UUID`
 
 	assertErrorString(t, wrapped, expected)
 	assertContext(t, wrapped)
@@ -107,9 +107,9 @@ func TestNewError(t *testing.T) {
 }
 
 func TestNewErrorf(t *testing.T) {
-	err := ctxwrap.NewErrorf(ctx, "failed to create user with name '%s'", "hermannm")
+	err := ctxwrap.NewErrorf(ctx, "failed to parse event of type '%s'", "ORDER_UPDATED")
 
-	assertErrorString(t, err, "failed to create user with name 'hermannm'")
+	assertErrorString(t, err, "failed to parse event of type 'ORDER_UPDATED'")
 	assertContext(t, err)
 }
 

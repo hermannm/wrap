@@ -22,11 +22,11 @@ func TestError(t *testing.T) {
 }
 
 func TestErrorf(t *testing.T) {
-	err := errors.New("username already taken")
-	wrapped := wrap.Errorf(err, "failed to create user with name '%s'", "hermannm")
+	err := errors.New("unrecognized event type")
+	wrapped := wrap.Errorf(err, "failed to process event of type '%s'", "ORDER_UPDATED")
 
-	expected := `failed to create user with name 'hermannm'
-- username already taken`
+	expected := `failed to process event of type 'ORDER_UPDATED'
+- unrecognized event type`
 
 	assertErrorString(t, wrapped, expected)
 }
@@ -43,12 +43,12 @@ func TestErrorWithAttrs(t *testing.T) {
 }
 
 func TestErrors(t *testing.T) {
-	errs := []error{errors.New("username too long"), errors.New("invalid email")}
-	wrapped := wrap.Errors(errs, "user creation failed")
+	errs := []error{errors.New("invalid timestamp format"), errors.New("id was not UUID")}
+	wrapped := wrap.Errors(errs, "failed to parse event")
 
-	expected := `user creation failed
-- username too long
-- invalid email`
+	expected := `failed to parse event
+- invalid timestamp format
+- id was not UUID`
 
 	assertErrorString(t, wrapped, expected)
 }
@@ -66,12 +66,12 @@ func TestErrorsWithAttrs(t *testing.T) {
 }
 
 func TestErrorsf(t *testing.T) {
-	errs := []error{errors.New("username already taken"), errors.New("invalid email")}
-	wrapped := wrap.Errorsf(errs, "failed to create user with name '%s'", "hermannm")
+	errs := []error{errors.New("invalid timestamp format"), errors.New("id was not UUID")}
+	wrapped := wrap.Errorsf(errs, "failed to parse event of type '%s'", "ORDER_UPDATED")
 
-	expected := `failed to create user with name 'hermannm'
-- username already taken
-- invalid email`
+	expected := `failed to parse event of type 'ORDER_UPDATED'
+- invalid timestamp format
+- id was not UUID`
 
 	assertErrorString(t, wrapped, expected)
 }

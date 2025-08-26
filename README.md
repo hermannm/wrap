@@ -19,17 +19,16 @@ before returning them. However, the common way of using `fmt.Errorf("extra conte
 lead to long and hard-to-read error messages. See the following example, albeit a bit contrived:
 
 ```
-failed to register user: user creation failed: invalid user data: invalid username: username exceeds 30 characters
+event processing failed: failed to store event: database insert failed: duplicate primary key 
 ```
 
 This library's `wrap.Error` aims to alleviate this, by instead formatting wrapped errors like this:
 
 ```
-failed to register user
-- user creation failed
-- invalid user data
-- invalid username
-- username exceeds 30 characters
+event processing failed
+- failed to store event
+- database insert failed
+- duplicate primary key
 ```
 
 The library also provides:
@@ -40,8 +39,8 @@ The library also provides:
   [`log/slog`](https://pkg.go.dev/log/slog) package), to provide better context when an error is
   logged
     - The error returned by this wrapper can be used by a logging library (such as
-      [hermannm.dev/devlog/log](https://pkg.go.dev/hermannm.dev/devlog/log)) to add error attributes
-      to the log output
+      [hermannm.dev/devlog/log](https://pkg.go.dev/hermannm.dev/devlog/log)) to add the error
+      attributes to the log output
 - A `ctxwrap` subpackage to attach `context.Context` to errors
   ([see below](#the-ctxwrap-subpackage) for more on this)
 
@@ -50,56 +49,56 @@ The library also provides:
 Basic usage:
 
 ```go
-err := errors.New("expired token")
-wrapped := wrap.Error(err, "user authentication failed")
+err := errors.New("duplicate primary key")
+wrapped := wrap.Error(err, "database insert failed")
 fmt.Println(wrapped)
-// user authentication failed
-// - expired token
+// database insert failed
+// - duplicate primary key
 ```
 
 Wrapped errors can be nested. Wrapping an already wrapped error adds it to the error list, as
 follows:
 
 ```go
-wrapped2 := wrap.Error(wrapped, "failed to update username")
+wrapped2 := wrap.Error(wrapped, "failed to store event")
 fmt.Println(wrapped2)
-// failed to update username
-// - user authentication failed
-// - expired token
+// failed to store event
+// - database insert failed
+// - duplicate primary key
 ```
 
 `wrap.Errorf` can be used to create the wrapping message with a format string:
 
 ```go
-err := errors.New("username already taken")
-wrapped := wrap.Errorf(err, "failed to create user with name '%s'", "hermannm")
+err := errors.New("unrecognized event type")
+wrapped := wrap.Errorf(err, "failed to process event of type '%s'", "ORDER_UPDATED")
 fmt.Println(wrapped)
-// failed to create user with name 'hermannm'
-// - username already taken
+// failed to process event of type 'ORDER_UPDATED'
+// - unrecognized event type
 ```
 
 ...and `wrap.Errors` can be used to wrap multiple errors:
 
 ```go
-errs := []error{errors.New("username too long"), errors.New("invalid email")}
-wrapped := wrap.Errors(errs, "user creation failed")
+errs := []error{errors.New("invalid timestamp format"), errors.New("id was not UUID")}
+wrapped := wrap.Errors(errs, "failed to parse event")
 fmt.Println(wrapped)
-// user creation failed
-// - username too long
-// - invalid email
+// failed to parse event
+// - invalid timestamp format
+// - id was not UUID
 ```
 
 When combining `wrap.Errors` and `wrap.Error`, nested errors are indented as follows:
 
 ```go
-errs := []error{errors.New("username too long"), errors.New("invalid email")}
-inner := wrap.Errors(errs, "user creation failed")
-outer := wrap.Error(inner, "failed to register new user")
+errs := []error{errors.New("invalid timestamp format"), errors.New("id was not UUID")}
+inner := wrap.Errors(errs, "failed to parse event")
+outer := wrap.Error(inner, "event processing failed")
 fmt.Println(outer)
-// failed to register new user
-// - user creation failed
-//   - username too long
-//   - invalid email
+// event processing failed
+// - failed to parse event
+//   - invalid timestamp format
+//   - id was not UUID
 ```
 
 Finally, `wrap.ErrorWithAttrs` lets you attach structured log attributes to errors. This can be used
@@ -113,7 +112,7 @@ func example() error {
 	req := ExternalServiceRequest { /* ... */ }
 	resp, err := callExternalService(request)
 	if != nil {
-		// When this error is logged by a conformant logging library such as devlog/log,
+		// When this error is logged by a compatible logging library (like devlog/log),
 		// the log output will have a "request" attribute with the given struct
 		return wrap.ErrorWithAttrs(err, "Request to external service failed", "request", req) 
 	}
@@ -157,7 +156,7 @@ func parentFunction(ctx context.Context) {
 
 func childFunction(ctx context.Context) error {
 	// log.AddContextAttrs adds log attributes to the context.
-    // When ctx is logged, these attributes are included in the log output
+	// When ctx is logged, these attributes are included in the log output
 	ctx = log.AddContextAttrs(ctx, "key", "value")
 
 	if err := someFallibleOperation(ctx); err != nil {

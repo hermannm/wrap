@@ -21,28 +21,28 @@ import (
 //
 // The following example:
 //
-//	err := errors.New("expired token")
-//	wrapped := wrap.Error(err, "user authentication failed")
+//	err := errors.New("duplicate primary key")
+//	wrapped := wrap.Error(err, "database insert failed")
 //	fmt.Println(wrapped)
 //
 // ...produces this error string:
 //
-//	user authentication failed
-//	- expired token
+//	database insert failed
+//	- duplicate primary key
 //
 // Wrapped errors can be nested. Wrapping an already wrapped error adds it to the error list, so
 // this next example:
 //
-//	err := errors.New("expired token")
-//	inner := wrap.Error(err, "user authentication failed")
-//	outer := wrap.Error(inner, "failed to update username")
+//	err := errors.New("duplicate primary key")
+//	inner := wrap.Error(err, "database insert failed")
+//	outer := wrap.Error(inner, "failed to store event")
 //	fmt.Println(outer)
 //
 // ...produces this error string:
 //
-//	failed to update username
-//	- user authentication failed
-//	- expired token
+//	failed to store event
+//	- database insert failed
+//	- duplicate primary key
 func Error(wrapped error, message string) error {
 	return wrappedError{wrapped, message}
 }
@@ -61,14 +61,14 @@ func Error(wrapped error, message string) error {
 //
 // The following example:
 //
-//	err := errors.New("username already taken")
-//	wrapped := wrap.Errorf(err, "failed to create user with name '%s'", "hermannm")
+//	err := errors.New("unrecognized event type")
+//	wrapped := wrap.Errorf(err, "failed to process event of type '%s'", "ORDER_UPDATED")
 //	fmt.Println(wrapped)
 //
 // ...produces this error string:
 //
-//	failed to create user with name 'hermannm'
-//	- username already taken
+//	failed to process event of type 'ORDER_UPDATED'
+//	- unrecognized event type
 func Errorf(wrapped error, messageFormat string, formatArgs ...any) error {
 	return wrappedError{wrapped, fmt.Sprintf(messageFormat, formatArgs...)}
 }
@@ -111,28 +111,28 @@ func Errorf(wrapped error, messageFormat string, formatArgs ...any) error {
 //
 // The following example:
 //
-//	err := errors.New("expired token")
-//	wrapped := wrap.Error(err, "user authentication failed")
+//	err := errors.New("duplicate primary key")
+//	wrapped := wrap.Error(err, "database insert failed")
 //	fmt.Println(wrapped)
 //
 // ...produces this error string:
 //
-//	user authentication failed
-//	- expired token
+//	database insert failed
+//	- duplicate primary key
 //
 // Wrapped errors can be nested. Wrapping an already wrapped error adds it to the error list, so
 // this next example:
 //
-//	err := errors.New("expired token")
-//	inner := wrap.Error(err, "user authentication failed")
-//	outer := wrap.Error(inner, "failed to update username")
+//	err := errors.New("duplicate primary key")
+//	inner := wrap.Error(err, "database insert failed")
+//	outer := wrap.Error(inner, "failed to store event")
 //	fmt.Println(outer)
 //
 // ...produces this error string:
 //
-//	failed to update username
-//	- user authentication failed
-//	- expired token
+//	failed to store event
+//	- database insert failed
+//	- duplicate primary key
 //
 // [hermannm.dev/devlog/log]: https://pkg.go.dev/hermannm.dev/devlog/log
 func ErrorWithAttrs(wrapped error, message string, logAttributes ...any) error {
@@ -152,29 +152,29 @@ func ErrorWithAttrs(wrapped error, message string, logAttributes ...any) error {
 //
 // The following example:
 //
-//	errs := []error{errors.New("username too long"), errors.New("invalid email")}
-//	wrapped := wrap.Errors(errs, "user creation failed")
+//	errs := []error{errors.New("invalid timestamp format"), errors.New("id was not UUID")}
+//	wrapped := wrap.Errors(errs, "failed to parse event")
 //	fmt.Println(wrapped)
 //
 // ...produces this error string:
 //
-//	user creation failed
-//	- username too long
-//	- invalid email
+//	failed to parse event
+//	- invalid timestamp format
+//	- id was not UUID
 //
 // When combined with [wrap.Error], nested wrapped errors are indented, so this next example:
 //
-//	errs := []error{errors.New("username too long"), errors.New("invalid email")}
-//	inner := wrap.Errors(errs, "user creation failed")
-//	outer := wrap.Error(inner, "failed to register new user")
+//	errs := []error{errors.New("invalid timestamp format"), errors.New("id was not UUID")}
+//	inner := wrap.Errors(errs, "failed to parse event")
+//	outer := wrap.Error(inner, "event processing failed")
 //	fmt.Println(outer)
 //
 // ...produces this error string:
 //
-//	failed to register new user
-//	- user creation failed
-//	  - username too long
-//	  - invalid email
+//	event processing failed
+//	- failed to parse event
+//	  - invalid timestamp format
+//	  - id was not UUID
 func Errors(wrapped []error, message string) error {
 	return wrappedErrors{wrapped, message}
 }
@@ -193,15 +193,15 @@ func Errors(wrapped []error, message string) error {
 //
 // The following example:
 //
-//	errs := []error{errors.New("username already taken"), errors.New("invalid email")}
-//	wrapped := wrap.Errorsf(errs, "failed to create user with name '%s'", "hermannm")
+//	errs := []error{errors.New("invalid timestamp format"), errors.New("id was not UUID")}
+//	wrapped := wrap.Errorsf(errs, "failed to process event of type '%s'", "ORDER_UPDATED")
 //	fmt.Println(wrapped)
 //
 // ...produces this error string:
 //
-//	failed to create user with name 'hermannm'
-//	- username already taken
-//	- invalid email
+//	failed to process event of type 'ORDER_UPDATED'
+//	- invalid timestamp format
+//	- id was not UUID
 func Errorsf(wrapped []error, messageFormat string, formatArgs ...any) error {
 	return wrappedErrors{wrapped, fmt.Sprintf(messageFormat, formatArgs...)}
 }
@@ -244,29 +244,29 @@ func Errorsf(wrapped []error, messageFormat string, formatArgs ...any) error {
 //
 // The following example:
 //
-//	errs := []error{errors.New("username too long"), errors.New("invalid email")}
-//	wrapped := wrap.Errors(errs, "user creation failed")
+//	errs := []error{errors.New("invalid timestamp format"), errors.New("id was not UUID")}
+//	wrapped := wrap.Errors(errs, "failed to parse event")
 //	fmt.Println(wrapped)
 //
 // ...produces this error string:
 //
-//	user creation failed
-//	- username too long
-//	- invalid email
+//	failed to parse event
+//	- invalid timestamp format
+//	- id was not UUID
 //
 // When combined with [wrap.Error], nested wrapped errors are indented, so this next example:
 //
-//	errs := []error{errors.New("username too long"), errors.New("invalid email")}
-//	inner := wrap.Errors(errs, "user creation failed")
-//	outer := wrap.Error(inner, "failed to register new user")
+//	errs := []error{errors.New("invalid timestamp format"), errors.New("id was not UUID")}
+//	inner := wrap.Errors(errs, "failed to parse event")
+//	outer := wrap.Error(inner, "event processing failed")
 //	fmt.Println(outer)
 //
 // ...produces this error string:
 //
-//	failed to register new user
-//	- user creation failed
-//	  - username too long
-//	  - invalid email
+//	event processing failed
+//	- failed to parse event
+//	  - invalid timestamp format
+//	  - id was not UUID
 //
 // [hermannm.dev/devlog/log]: https://pkg.go.dev/hermannm.dev/devlog/log
 func ErrorsWithAttrs(wrapped []error, message string, logAttributes ...any) error {

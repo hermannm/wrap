@@ -100,28 +100,28 @@ import (
 //
 // The following example:
 //
-//	err := errors.New("expired token")
-//	wrapped := ctxwrap.Error(ctx, err, "user authentication failed")
+//	err := errors.New("duplicate primary key")
+//	wrapped := ctxwrap.Error(ctx, err, "database insert failed")
 //	fmt.Println(wrapped)
 //
 // ...produces this error string:
 //
-//	user authentication failed
-//	- expired token
+//	database insert failed
+//	- duplicate primary key
 //
 // Wrapped errors can be nested. Wrapping an already wrapped error adds it to the error list, so
 // this next example:
 //
-//	err := errors.New("expired token")
-//	inner := ctxwrap.Error(ctx, err, "user authentication failed")
-//	outer := ctxwrap.Error(ctx, inner, "failed to update username")
+//	err := errors.New("duplicate primary key")
+//	inner := ctxwrap.Error(ctx, err, "database insert failed")
+//	outer := ctxwrap.Error(ctx, inner, "failed to store event")
 //	fmt.Println(outer)
 //
 // ...produces this error string:
 //
-//	failed to update username
-//	- user authentication failed
-//	- expired token
+//	failed to store event
+//	- database insert failed
+//	- duplicate primary key
 func Error(ctx context.Context, wrapped error, message string) error {
 	return wrappedError{ctx, wrapped, message}
 }
@@ -140,14 +140,14 @@ func Error(ctx context.Context, wrapped error, message string) error {
 //
 // The following example:
 //
-//	err := errors.New("username already taken")
-//	wrapped := ctxwrap.Errorf(ctx, err, "failed to create user with name '%s'", "hermannm")
+//	err := errors.New("unrecognized event type")
+//	wrapped := ctxwrap.Errorf(ctx, err, "failed to process event of type '%s'", "ORDER_UPDATED")
 //	fmt.Println(wrapped)
 //
 // ...produces this error string:
 //
-//	failed to create user with name 'hermannm'
-//	- username already taken
+//	failed to process event of type 'ORDER_UPDATED'
+//	- unrecognized event type
 func Errorf(
 	ctx context.Context,
 	wrapped error,
@@ -195,28 +195,28 @@ func Errorf(
 //
 // The following example:
 //
-//	err := errors.New("expired token")
-//	wrapped := ctxwrap.Error(ctx, err, "user authentication failed")
+//	err := errors.New("duplicate primary key")
+//	wrapped := ctxwrap.Error(ctx, err, "database insert failed")
 //	fmt.Println(wrapped)
 //
 // ...produces this error string:
 //
-//	user authentication failed
-//	- expired token
+//	database insert failed
+//	- duplicate primary key
 //
 // Wrapped errors can be nested. Wrapping an already wrapped error adds it to the error list, so
 // this next example:
 //
-//	err := errors.New("expired token")
-//	inner := ctxwrap.Error(ctx, err, "user authentication failed")
-//	outer := ctxwrap.Error(ctx, inner, "failed to update username")
+//	err := errors.New("duplicate primary key")
+//	inner := ctxwrap.Error(ctx, err, "database insert failed")
+//	outer := ctxwrap.Error(ctx, inner, "failed to store event")
 //	fmt.Println(outer)
 //
 // ...produces this error string:
 //
-//	failed to update username
-//	- user authentication failed
-//	- expired token
+//	failed to store event
+//	- database insert failed
+//	- duplicate primary key
 //
 // [hermannm.dev/devlog/log]: https://pkg.go.dev/hermannm.dev/devlog/log
 func ErrorWithAttrs(
@@ -241,29 +241,29 @@ func ErrorWithAttrs(
 //
 // The following example:
 //
-//	errs := []error{errors.New("username too long"), errors.New("invalid email")}
-//	wrapped := ctxwrap.Errors(ctx, errs, "user creation failed")
+//	errs := []error{errors.New("invalid timestamp format"), errors.New("id was not UUID")}
+//	wrapped := ctxwrap.Errors(ctx, errs, "failed to parse event")
 //	fmt.Println(wrapped)
 //
 // ...produces this error string:
 //
-//	user creation failed
-//	- username too long
-//	- invalid email
+//	failed to parse event
+//	- invalid timestamp format
+//	- id was not UUID
 //
-// When combined with [ctxwrap.Error], nested wrapped errors are indented, so this next example:
+// When combined with [wrap.Error], nested wrapped errors are indented, so this next example:
 //
-//	errs := []error{errors.New("username too long"), errors.New("invalid email")}
-//	inner := ctxwrap.Errors(ctx, errs, "user creation failed")
-//	outer := ctxwrap.Error(ctx, inner, "failed to register new user")
+//	errs := []error{errors.New("invalid timestamp format"), errors.New("id was not UUID")}
+//	inner := ctxwrap.Errors(ctx, errs, "failed to parse event")
+//	outer := ctxwrap.Error(ctx, inner, "event processing failed")
 //	fmt.Println(outer)
 //
 // ...produces this error string:
 //
-//	failed to register new user
-//	- user creation failed
-//	  - username too long
-//	  - invalid email
+//	event processing failed
+//	- failed to parse event
+//	  - invalid timestamp format
+//	  - id was not UUID
 func Errors(ctx context.Context, wrapped []error, message string) error {
 	return wrappedErrors{ctx, wrapped, message}
 }
@@ -282,15 +282,15 @@ func Errors(ctx context.Context, wrapped []error, message string) error {
 //
 // The following example:
 //
-//	errs := []error{errors.New("username already taken"), errors.New("invalid email")}
-//	wrapped := ctxwrap.Errorsf(ctx, errs, "failed to create user with name '%s'", "hermannm")
+//	errs := []error{errors.New("invalid timestamp format"), errors.New("id was not UUID")}
+//	wrapped := ctxwrap.Errorsf(ctx, errs, "failed to process event of type '%s'", "ORDER_UPDATED")
 //	fmt.Println(wrapped)
 //
 // ...produces this error string:
 //
-//	failed to create user with name 'hermannm'
-//	- username already taken
-//	- invalid email
+//	failed to process event of type 'ORDER_UPDATED'
+//	- invalid timestamp format
+//	- id was not UUID
 func Errorsf(ctx context.Context, wrapped []error, messageFormat string, formatArgs ...any) error {
 	return wrappedErrors{ctx, wrapped, fmt.Sprintf(messageFormat, formatArgs...)}
 }
@@ -333,29 +333,29 @@ func Errorsf(ctx context.Context, wrapped []error, messageFormat string, formatA
 //
 // The following example:
 //
-//	errs := []error{errors.New("username too long"), errors.New("invalid email")}
-//	wrapped := ctxwrap.Errors(ctx, errs, "user creation failed")
+//	errs := []error{errors.New("invalid timestamp format"), errors.New("id was not UUID")}
+//	wrapped := ctxwrap.Errors(ctx, errs, "failed to parse event")
 //	fmt.Println(wrapped)
 //
 // ...produces this error string:
 //
-//	user creation failed
-//	- username too long
-//	- invalid email
+//	failed to parse event
+//	- invalid timestamp format
+//	- id was not UUID
 //
-// When combined with [ctxwrap.Error], nested wrapped errors are indented, so this next example:
+// When combined with [wrap.Error], nested wrapped errors are indented, so this next example:
 //
-//	errs := []error{errors.New("username too long"), errors.New("invalid email")}
-//	inner := ctxwrap.Errors(ctx, errs, "user creation failed")
-//	outer := ctxwrap.Error(ctx, inner, "failed to register new user")
+//	errs := []error{errors.New("invalid timestamp format"), errors.New("id was not UUID")}
+//	inner := ctxwrap.Errors(ctx, errs, "failed to parse event")
+//	outer := ctxwrap.Error(ctx, inner, "event processing failed")
 //	fmt.Println(outer)
 //
 // ...produces this error string:
 //
-//	failed to register new user
-//	- user creation failed
-//	  - username too long
-//	  - invalid email
+//	event processing failed
+//	- failed to parse event
+//	  - invalid timestamp format
+//	  - id was not UUID
 func ErrorsWithAttrs(
 	ctx context.Context,
 	wrapped []error,
