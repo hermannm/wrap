@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [v0.4.0] - 2025-08-27
 
 - Add `ctxwrap` subpackage for attaching `context.Context` to errors (see README for more on this)
 - Add `wrap.ErrorWithAttrs` function for attaching structured log attributes to errors
@@ -41,7 +41,9 @@
 
 - Initial release
 
-[Unreleased]: https://github.com/hermannm/wrap/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/hermannm/wrap/compare/v0.4.0...HEAD
+
+[v0.4.0]: https://github.com/hermannm/wrap/compare/v0.3.1...v0.4.0
 
 [v0.3.1]: https://github.com/hermannm/wrap/compare/v0.3.0...v0.3.1
 
