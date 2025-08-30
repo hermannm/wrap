@@ -28,7 +28,7 @@ formatters:
   settings:
     goimports:
       local-prefixes:
-        - hermannm.dev/errclose
+        - hermannm.dev/wrap
     golines:
       # shorten-comments: true
       reformat-tags: false # Conflicts with default formatter
