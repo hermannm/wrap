@@ -244,6 +244,8 @@ func TestErrorsAs(t *testing.T) {
 }
 
 func assertErrorString(t *testing.T, errToTest error, expected string) {
+	t.Helper()
+
 	if actual := errToTest.Error(); actual != expected {
 		t.Errorf(
 			`Unexpected error string
@@ -262,6 +264,8 @@ Got:
 }
 
 func assertLogAttrs(t *testing.T, err error, expected ...slog.Attr) {
+	t.Helper()
+
 	errWithAttrs, ok := err.(interface{ LogAttrs() []slog.Attr })
 	if !ok {
 		t.Fatalf("Expected error to implement LogAttrs() []slog.Attr")

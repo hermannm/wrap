@@ -32,7 +32,7 @@ func BuildWrappedErrorString(
 	},
 ) string {
 	var builder errorBuilder
-	builder.WriteString(err.WrappingMessage())
+	_, _ = builder.WriteString(err.WrappingMessage())
 	builder.writeErrorListItem(err.Unwrap(), 1, false)
 	return builder.String()
 }
@@ -44,11 +44,12 @@ func BuildWrappedErrorsString(
 	},
 ) string {
 	var builder errorBuilder
-	builder.WriteString(err.WrappingMessage())
+	_, _ = builder.WriteString(err.WrappingMessage())
 	builder.writeErrorList(err.Unwrap(), 1)
 	return builder.String()
 }
 
+// strings.Builder always returns a nil error, so we don't have to check write errors with this.
 type errorBuilder struct {
 	strings.Builder
 }
@@ -93,26 +94,26 @@ func (builder *errorBuilder) writeErrorMessage(message []byte, indent int) {
 	indent++ // Since indent is made for list bullet points, we want to indent one level deeper
 
 	lastWriteIndex := 0
-	for i := 0; i < len(message)-1; i++ {
-		if message[i] == '\n' {
-			builder.Write(message[lastWriteIndex : i+1])
+	for i, char := range message {
+		if char == '\n' {
+			_, _ = builder.Write(message[lastWriteIndex : i+1])
 			builder.writeIndent(indent)
 			lastWriteIndex = i + 1
 		}
 	}
 
-	builder.Write(message[lastWriteIndex:])
+	_, _ = builder.Write(message[lastWriteIndex:])
 }
 
 func (builder *errorBuilder) writeListItemPrefix(indent int) {
-	builder.WriteByte('\n')
+	_ = builder.WriteByte('\n')
 	builder.writeIndent(indent)
-	builder.WriteString("- ")
+	_, _ = builder.WriteString("- ")
 }
 
 func (builder *errorBuilder) writeIndent(indent int) {
 	for i := 1; i < indent; i++ {
-		builder.WriteString("  ")
+		_, _ = builder.WriteString("  ")
 	}
 }
 

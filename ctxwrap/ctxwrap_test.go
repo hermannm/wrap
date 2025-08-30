@@ -12,7 +12,9 @@ import (
 	"hermannm.dev/wrap/ctxwrap"
 )
 
-var ctx = context.WithValue(context.Background(), "testkey", "testvalue")
+type testContextKey struct{}
+
+var ctx = context.WithValue(context.Background(), testContextKey{}, "testvalue")
 
 func TestError(t *testing.T) {
 	err := errors.New("error")
@@ -284,6 +286,8 @@ func TestErrorsAs(t *testing.T) {
 }
 
 func assertErrorString(t *testing.T, errToTest error, expected string) {
+	t.Helper()
+
 	if actual := errToTest.Error(); actual != expected {
 		t.Errorf(
 			`Unexpected error string
@@ -302,6 +306,8 @@ Got:
 }
 
 func assertLogAttrs(t *testing.T, err error, expected ...slog.Attr) {
+	t.Helper()
+
 	errWithAttrs, ok := err.(interface{ LogAttrs() []slog.Attr })
 	if !ok {
 		t.Fatalf("Expected error to implement LogAttrs() []slog.Attr")
@@ -320,13 +326,15 @@ Got: %v`,
 }
 
 func assertContext(t *testing.T, err error) {
+	t.Helper()
+
 	errWithContext, ok := err.(interface{ Context() context.Context })
 	if !ok {
 		t.Fatalf("Expected error to implement Context() context.Context")
 	}
 
 	actual := errWithContext.Context()
-	testValue := actual.Value("testkey")
+	testValue := actual.Value(testContextKey{})
 	if testValue != "testvalue" {
 		t.Fatalf("Expected error context to have value testkey=testvalue, but got '%v'", testValue)
 	}
